@@ -1,0 +1,141 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class TeacherDashboard extends StatefulWidget {
+  const TeacherDashboard({super.key});
+
+  @override
+  State<TeacherDashboard> createState() => _TeacherDashboardState();
+}
+
+class _TeacherDashboardState extends State<TeacherDashboard> {
+  String? assignedClass;
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadTeacherClass();
+  }
+
+  // 🔥 Load assigned class of teacher
+  Future<void> loadTeacherClass() async {
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+
+    var doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .get();
+
+    setState(() {
+      assignedClass = doc["assignedClass"];
+      loading = false;
+    });
+  }
+
+  Widget buildCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.white, size: 32),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white)),
+        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Teacher Dashboard"),
+        centerTitle: true,
+      ),
+
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ListView(
+          children: [
+            const SizedBox(height: 10),
+
+            // PROFILE
+            buildCard(
+              icon: Icons.person,
+              title: "My Profile",
+              subtitle: "View your details",
+              onTap: () => Get.toNamed('/teacherProfile'),
+            ),
+
+            // APPROVE STUDENTS
+            buildCard(
+              icon: Icons.approval,
+              title: "Approve Students",
+              subtitle: "Approve students from your department",
+              onTap: () => Get.toNamed('/approveStudents'),
+            ),
+
+            // TAKE ATTENDANCE
+            buildCard(
+              icon: Icons.check_circle,
+              title: "Take Attendance",
+              subtitle: assignedClass == null || assignedClass!.isEmpty
+                  ? "Assign class first"
+                  : "Class: $assignedClass",
+              onTap: () {
+                if (assignedClass == null || assignedClass!.isEmpty) {
+                  Get.snackbar("Class Not Assigned",
+                      "Please assign a class first!",
+                      backgroundColor: Colors.black, colorText: Colors.white);
+                } else {
+                  Get.toNamed('/attendance');
+                }
+              },
+            ),
+
+            // 🔥 ASSIGN CLASS (ONLY IF NOT ASSIGNED)
+            if (assignedClass == null || assignedClass!.isEmpty)
+              buildCard(
+                icon: Icons.class_,
+                title: "Assign Class",
+                subtitle: "Select your class",
+                onTap: () => Get.toNamed('/assignClass'),
+              ),
+
+            const SizedBox(height: 20),
+
+            // LOGOUT
+            ElevatedButton(
+              onPressed: () => Get.offAllNamed('/login'),
+              child: const Text("Logout"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
