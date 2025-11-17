@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               const SizedBox(height: 40),
-              // ----------------------------   FORGOT PASSWORD WITH POPUP ----------------------------
+              // ----------------------------   FORGOT PASSWORD ----------------------------
               Align(
                 alignment: Alignment.centerRight,
                 child: TweenAnimationBuilder<double>(
