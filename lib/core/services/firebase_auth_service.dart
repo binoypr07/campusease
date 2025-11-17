@@ -66,24 +66,26 @@ class FirebaseAuthService {
   // APPROVE USER
   // -----------------------------------------------------------
   Future<void> approveUser(String uid, Map<String, dynamic> data) async {
-  try {
-    // Move user to "users"
-    await _db.collection("users").doc(uid).set(data);
+    try {
+      // Move user to "users"
+      await _db.collection("users").doc(uid).set(data);
 
-    // Delete from pending
-    await _db.collection("pendingUsers").doc(uid).delete();
+      // Delete from pending
+      await _db.collection("pendingUsers").doc(uid).delete();
 
-    print("User approved successfully");
-  } catch (e) {
-    print("Approve user error: $e");
+      print("User approved successfully");
+    } catch (e) {
+      print("Approve user error: $e");
+    }
   }
-}
-
 
   // -----------------------------------------------------------
   // STORE EXTRA TEACHER DATA
   // -----------------------------------------------------------
-  Future<void> addExtraTeacherData(String uid, Map<String, dynamic> data) async {
+  Future<void> addExtraTeacherData(
+    String uid,
+    Map<String, dynamic> data,
+  ) async {
     try {
       await _db.collection("pendingUsers").doc(uid).update(data);
     } catch (e) {
@@ -97,7 +99,6 @@ class FirebaseAuthService {
   Future<Map<String, dynamic>?> getUserRole(String uid) async {
     var snap = await _db.collection("users").doc(uid).get();
     if (!snap.exists) return null;
-     return snap.data();   // return MAP
+    return snap.data(); // return MAP
   }
-
 }

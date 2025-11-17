@@ -28,7 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              
               // ---------------------------- APP TITLE ----------------------------
               Text(
                 "CampusEase",
@@ -43,10 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const Text(
                 "Login to Continue",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.white70),
               ),
 
               const SizedBox(height: 45),
@@ -86,7 +82,59 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               const SizedBox(height: 40),
-
+              // ----------------------------   FORGOT PASSWORD WITH POPUP ----------------------------
+              Align(
+                alignment: Alignment.centerRight,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 1.0, end: 1.0),
+                  duration: const Duration(milliseconds: 100),
+                  builder: (context, scale, child) {
+                    return Transform.scale(scale: scale, child: child);
+                  },
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      // Show popup instead of navigating
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color.fromARGB(255, 5, 5, 5),
+                            Color.fromARGB(255, 8, 8, 8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromARGB(
+                              255,
+                              218,
+                              216,
+                              220,
+                            ).withOpacity(0.6),
+                            offset: const Offset(0, 3),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        "Forgot Password?",
+                        style: TextStyle(
+                          color: Color.fromARGB(255, 247, 129, 129),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
               // ---------------------------- LOGIN BUTTON ----------------------------
               SizedBox(
                 width: double.infinity,
@@ -101,9 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   child: isLoading
-                      ? const CircularProgressIndicator(
-                          color: Colors.black,
-                        )
+                      ? const CircularProgressIndicator(color: Colors.black)
                       : const Text(
                           "Login",
                           style: TextStyle(
@@ -132,7 +178,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(color: Colors.white),
                 ),
               ),
-
             ],
           ),
         ),
@@ -144,10 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> loginUser() async {
     setState(() => isLoading = true);
 
-    var user = await authService.login(
-      email.text.trim(),
-      password.text.trim(),
-    );
+    var user = await authService.login(email.text.trim(), password.text.trim());
 
     setState(() => isLoading = false);
 
