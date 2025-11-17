@@ -70,17 +70,10 @@ class StudentDashboard extends StatelessWidget {
 
             // ------------------ ATTENDANCE ------------------
             buildCard(
-              icon: Icons.calendar_month,
-              title: "Attendance",
-              subtitle: "Daily / Monthly / Semester view",
-              onTap: () {
-                Get.snackbar(
-                  "Coming Soon",
-                  "Attendance viewing is coming!",
-                  backgroundColor: Colors.black,
-                  colorText: Colors.white,
-                );
-              },
+               icon: Icons.calendar_month,
+               title: "Attendance",
+               subtitle: "View your attendance",
+               onTap: () => Get.toNamed('/studentAttendance'),
             ),
 
             // ------------------ INTERNAL MARKS ------------------

@@ -12,162 +12,154 @@ class AssignClassScreen extends StatefulWidget {
 
 class _AssignClassScreenState extends State<AssignClassScreen> {
   String? teacherUid;
-  String? teacherDept;
+  String? teacherName;
   String? assignedClass;
 
-  // All available classes
-  final List<String> allClasses = [
-    "CS1","CS2","CS3","CS4",
-    "PHY1","PHY2","PHY3","PHY4",
-    "CHE1","CHE2","CHE3","CHE4",
-    "IC1","IC2","IC3","IC4",
-    "MAT1","MAT2","MAT3","MAT4",
-    "ZOO1","ZOO2","ZOO3","ZOO4",
-    "BOO1","BOO2","BOO3","BOO4",
-    "BCOM1","BCOM2","BCOM3","BCOM4",
-    "ECO1","ECO2","ECO3","ECO4",
-    "HIN1","HIN2","HIN3","HIN4",
-    "HIS1","HIS2","HIS3","HIS3",
-    "ENG1","ENG2","ENG3","ENG4",
-    "MAL1","MAL2","MAL3","MAL4",
+  final List<String> classList = [
+   "CS1","CS2","CS3","CS4",
+   "PHY1","PHY2","PHY3","PHY4",
+   "CHE1","CHE2","CHE3","CHE4",
+   "IC1","IC2","IC3","IC4",
+   "MAT1","MAT2","MAT3","MAT4",
+   "ZOO1","ZOO2","ZOO3","ZOO4",
+   "BOO1","BOO2","BOO3","BOO4",
+   "BCOM1","BCOM2","BCOM3","BCOM4",
+   "ECO1","ECO2","ECO3","ECO4",
+   "HIN1","HIN2","HIN3","HIN4",
+   "HIS1","HIS2","HIS3","HIS3",
+   "ENG1","ENG2","ENG3","ENG4",
+   "MAL1","MAL2","MAL3","MAL4",
   ];
 
-  List<String> freeClasses = [];
-  bool loading = true;
+  Map<String, dynamic> occupiedClasses = {};
 
   @override
   void initState() {
     super.initState();
-    loadTeacherDetails();
+    loadTeacher();
+    loadOccupiedClasses();
   }
 
-  // --------------------------------------------------------
-  // LOAD TEACHER DETAILS + EXISTING CLASS ASSIGNMENT
-  // --------------------------------------------------------
-  Future<void> loadTeacherDetails() async {
-    teacherUid = FirebaseAuth.instance.currentUser!.uid;
-
-    var doc = await FirebaseFirestore.instance.collection("users").doc(teacherUid).get();
-
-    teacherDept = doc["department"];
-    assignedClass = doc["assignedClass"];
-
-    await loadFreeClasses();
+  Future<void> loadTeacher() async {
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+    var doc = await FirebaseFirestore.instance.collection("users").doc(uid).get();
 
     setState(() {
-      loading = false;
+      teacherUid = uid;
+      teacherName = doc["name"];
+      assignedClass = doc["assignedClass"];
     });
   }
 
-  // --------------------------------------------------------
-  // FIND WHICH CLASSES ARE ALREADY TAKEN BY OTHER TEACHERS
-  // --------------------------------------------------------
-  Future<void> loadFreeClasses() async {
-    var allTeacherDocs = await FirebaseFirestore.instance.collection("users")
-        .where("role", isEqualTo: "teacher")
-        .get();
+  Future<void> loadOccupiedClasses() async {
+    var snap =
+        await FirebaseFirestore.instance.collection("classAssignments").get();
 
-    // Collect assigned classes
-    List<String> taken = [];
-    for (var t in allTeacherDocs.docs) {
-      if (t["assignedClass"] != null && t["assignedClass"] != "") {
-        taken.add(t["assignedClass"]);
-      }
+    Map<String, dynamic> temp = {};
+    for (var doc in snap.docs) {
+      temp[doc.id] = doc.data()["teacherUid"];
     }
 
-    // available = allClasses - taken
-    freeClasses = allClasses.where((cls) => !taken.contains(cls)).toList();
+    setState(() => occupiedClasses = temp);
   }
 
-  // --------------------------------------------------------
-  // ASSIGN CLASS PERMANENTLY (NO CHANGES AFTER)
-  // --------------------------------------------------------
-  Future<void> assignClass(String cls) async {
-    await FirebaseFirestore.instance.collection("users").doc(teacherUid).update({
-      "assignedClass": cls,
+  Future<void> assignClass(String className) async {
+    // Prevent overwrite if already taken
+    if (occupiedClasses[className] != null) {
+      Get.snackbar(
+        "Class Occupied",
+        "$className is already assigned to another teacher.",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    // Save in classAssignments
+    await FirebaseFirestore.instance
+        .collection("classAssignments")
+        .doc(className)
+        .set({
+      "teacherUid": teacherUid,
+      "teacherName": teacherName,
+    });
+
+    // Save in teacher profile
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(teacherUid)
+        .update({
+      "assignedClass": className,
     });
 
     Get.snackbar(
-      "Assigned!",
-      "Class $cls assigned successfully",
+      "Assigned",
+      "Class $className assigned successfully!",
       backgroundColor: Colors.black,
       colorText: Colors.white,
     );
 
-    setState(() {
-      assignedClass = cls;
-    });
+    loadOccupiedClasses();
+    loadTeacher();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
+    if (teacherUid == null || occupiedClasses.isEmpty) {
       return const Scaffold(
-        backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
 
-    // --------------------------------------------------------
-    // IF TEACHER ALREADY HAS A CLASS → NO MORE CHANGES ALLOWED
-    // --------------------------------------------------------
+    // Teacher already has a class → lock screen
     if (assignedClass != null && assignedClass!.isNotEmpty) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text("Assign Class"),
-          centerTitle: true,
-        ),
-        backgroundColor: Colors.black,
+        appBar: AppBar(title: const Text("Assign Class")),
         body: Center(
           child: Text(
-            "You already have a class assigned:\n\n$assignedClass",
+            "You are already assigned to class: $assignedClass\n\nOnly admin can change it.",
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 20),
+            style: const TextStyle(fontSize: 18, color: Colors.white),
           ),
         ),
       );
     }
 
-    // --------------------------------------------------------
-    // SHOW ONLY FREE CLASSES
-    // --------------------------------------------------------
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Assign Class"),
-        centerTitle: true,
-      ),
-      backgroundColor: Colors.black,
-
-      body: Padding(
+      appBar: AppBar(title: const Text("Assign Class")),
+      body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Select a Class (only free classes shown)",
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
+        itemCount: classList.length,
+        itemBuilder: (context, index) {
+          String className = classList[index];
+          bool isTaken = occupiedClasses[className] != null;
 
-            const SizedBox(height: 20),
-
-            DropdownButtonFormField<String>(
-              dropdownColor: Colors.black,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: "Choose Class",
+          return Card(
+            child: ListTile(
+              title: Text(
+                className,
+                style: const TextStyle(color: Colors.white, fontSize: 20),
               ),
-              items: freeClasses.map(
-                (cls) => DropdownMenuItem(
-                  value: cls,
-                  child: Text(cls),
-                ),
-              ).toList(),
-              onChanged: (cls) {
-                assignClass(cls!);
-              },
+              subtitle: isTaken
+                  ? Text(
+                      "Already assigned",
+                      style: TextStyle(color: Colors.red.shade300),
+                    )
+                  : const Text(
+                      "Available",
+                      style: TextStyle(color: Colors.white),
+                    ),
+              trailing: isTaken
+                  ? const Icon(Icons.lock, color: Colors.red)
+                  : const Icon(Icons.arrow_forward_ios, color: Colors.white),
+              onTap: isTaken
+                  ? null
+                  : () {
+                      assignClass(className);
+                    },
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

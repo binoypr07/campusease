@@ -17,6 +17,7 @@ import 'views/teacher/attendence_screen.dart';
 import 'views/teacher/teacher_profile.dart';
 import 'views/teacher/approve_students.dart';
 import 'views/student/student_profile.dart';
+import 'views/student/student_attendence.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -118,6 +119,7 @@ class MyApp extends StatelessWidget {
         '/teacherProfile': (_) => const TeacherProfileScreen(),
         '/approveStudents': (_) => const TeacherApproveStudents(),
         '/studentProfile': (_) => const StudentProfileScreen(),
+        '/studentAttendance': (_) => const StudentAttendanceScreen(),
 
 
       },
