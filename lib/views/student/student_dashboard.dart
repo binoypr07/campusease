@@ -64,15 +64,9 @@ class StudentDashboard extends StatelessWidget {
               icon: Icons.person,
               title: "My Profile",
               subtitle: "View personal details",
-              onTap: () {
-                Get.snackbar(
-                  "Coming Soon",
-                  "Profile screen is coming!",
-                  backgroundColor: Colors.black,
-                  colorText: Colors.white,
-                );
-              },
+              onTap: () => Get.toNamed('/studentProfile'),
             ),
+
 
             // ------------------ ATTENDANCE ------------------
             buildCard(

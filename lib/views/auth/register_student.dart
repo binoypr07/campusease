@@ -37,19 +37,19 @@ class _RegisterStudentState extends State<RegisterStudent> {
   ];
 
   final List<String> classList = [
-    "CS1","CS2","CS3",
-    "PHY1","PHY2","PHY3",
-    "CHE1","CHE2","CHE3",
-    "IC1","IC2","IC3",
-    "MAT1","MAT2","MAT3",
-    "ZOO1","ZOO2","ZOO3",
-    "BOO1","BOO2","BOO3",
-    "BCOM1","BCOM2","BCOM3",
-    "ECO1","ECO2","ECO3",
-    "HIN1","HIN2","HIN3",
-    "HIS1","HIS2","HIS3",
-    "ENG1","ENG2","ENG3",
-    "MAL1","MAL2","MAL3",
+    "CS1","CS2","CS3","CS4",
+    "PHY1","PHY2","PHY3","PHY4",
+    "CHE1","CHE2","CHE3","CHE4",
+    "IC1","IC2","IC3","IC4",
+    "MAT1","MAT2","MAT3","MAT4",
+    "ZOO1","ZOO2","ZOO3","ZOO4",
+    "BOO1","BOO2","BOO3","BOO4",
+    "BCOM1","BCOM2","BCOM3","BCOM4",
+    "ECO1","ECO2","ECO3","ECO4",
+    "HIN1","HIN2","HIN3","HIN4",
+    "HIS1","HIS2","HIS3","HIS3",
+    "ENG1","ENG2","ENG3","ENG4",
+    "MAL1","MAL2","MAL3","MAL4",
   ];
 
   bool loading = false;
