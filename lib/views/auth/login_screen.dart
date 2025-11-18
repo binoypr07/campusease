@@ -94,7 +94,272 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () {
-                      // Show popup instead of navigating
+                      String userEmail = email.text
+                          .trim(); // <-- your existing email controller
+
+                      if (userEmail.isEmpty) {
+                        // If email empty show warning popup
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text("Email Required"),
+                            content: const Text(
+                              "Please enter your email before resetting password.",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text("OK"),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return Dialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            backgroundColor: const Color(0xFF121212),
+                            child: SizedBox(
+                              width: 260,
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      "Reset Password",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 15),
+
+                                    // ---------------- SHOW USER EMAIL ----------------
+                                    Text(
+                                      "We will send an OTP to:",
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      userEmail,
+                                      style: const TextStyle(
+                                        color: Colors.pinkAccent,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 25),
+
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        // CANCEL BUTTON
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text(
+                                            "Cancel",
+                                            style: TextStyle(
+                                              color: Colors.redAccent,
+                                            ),
+                                          ),
+                                        ),
+
+                                        const SizedBox(width: 10),
+
+                                        // SEND OTP BUTTON
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.pinkAccent,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            // TODO: send OTP to userEmail
+                                            Navigator.pop(
+                                              context,
+                                            ); // close previous popup
+
+                                            // Show OTP verification popup
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) {
+                                                TextEditingController
+                                                otpController =
+                                                    TextEditingController();
+
+                                                return Dialog(
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          15,
+                                                        ),
+                                                  ),
+                                                  backgroundColor: const Color(
+                                                    0xFF121212,
+                                                  ),
+                                                  child: SizedBox(
+                                                    width: 260,
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            20,
+                                                          ),
+                                                      child: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          const Text(
+                                                            "Verify OTP",
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 18,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+
+                                                          const SizedBox(
+                                                            height: 20,
+                                                          ),
+
+                                                          // OTP TextField
+                                                          TextField(
+                                                            controller:
+                                                                otpController,
+                                                            keyboardType:
+                                                                TextInputType
+                                                                    .number,
+                                                            style:
+                                                                const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                ),
+                                                            decoration: const InputDecoration(
+                                                              labelText:
+                                                                  "Enter OTP",
+                                                              labelStyle:
+                                                                  TextStyle(
+                                                                    color: Colors
+                                                                        .white70,
+                                                                  ),
+                                                              enabledBorder:
+                                                                  UnderlineInputBorder(
+                                                                    borderSide:
+                                                                        BorderSide(
+                                                                          color:
+                                                                              Colors.white38,
+                                                                        ),
+                                                                  ),
+                                                              focusedBorder:
+                                                                  UnderlineInputBorder(
+                                                                    borderSide:
+                                                                        BorderSide(
+                                                                          color:
+                                                                              Colors.white,
+                                                                        ),
+                                                                  ),
+                                                            ),
+                                                          ),
+
+                                                          const SizedBox(
+                                                            height: 25,
+                                                          ),
+
+                                                          Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .end,
+                                                            children: [
+                                                              // CANCEL
+                                                              TextButton(
+                                                                onPressed: () =>
+                                                                    Navigator.pop(
+                                                                      context,
+                                                                    ),
+                                                                child: const Text(
+                                                                  "Cancel",
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .redAccent,
+                                                                  ),
+                                                                ),
+                                                              ),
+
+                                                              const SizedBox(
+                                                                width: 10,
+                                                              ),
+
+                                                              // VERIFY OTP BUTTON
+                                                              ElevatedButton(
+                                                                style: ElevatedButton.styleFrom(
+                                                                  backgroundColor:
+                                                                      Colors
+                                                                          .pinkAccent,
+                                                                  shape: RoundedRectangleBorder(
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                          8,
+                                                                        ),
+                                                                  ),
+                                                                ),
+                                                                onPressed: () {
+                                                                  String otp =
+                                                                      otpController
+                                                                          .text
+                                                                          .trim();
+
+                                                                  // TODO: verify OTP logic here
+
+                                                                  Navigator.pop(
+                                                                    context,
+                                                                  );
+                                                                },
+                                                                child: const Text(
+                                                                  "Verify OTP",
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            );
+                                          },
+                                          child: const Text("Send OTP"),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
