@@ -236,7 +236,7 @@ class _RegisterTeacherState extends State<RegisterTeacher> {
         colorText: Colors.black,
       );
 
-      Get.back();
+      Get.offAllNamed('/login');
     } else {
       setState(() => loading = false);
 

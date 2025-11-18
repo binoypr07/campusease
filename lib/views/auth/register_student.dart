@@ -211,7 +211,7 @@ class _RegisterStudentState extends State<RegisterStudent> {
         backgroundColor: Colors.white,
         colorText: Colors.black,
       );
-      Get.back();
+      Get.offAllNamed('/login');
     } else {
       Get.snackbar(
         "Failed",

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // ROUTES
 import 'views/admin/admin_dashboard.dart';
@@ -18,6 +19,7 @@ import 'views/teacher/teacher_profile.dart';
 import 'views/teacher/approve_students.dart';
 import 'views/student/student_profile.dart';
 import 'views/student/student_attendence.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -124,7 +126,10 @@ class MyApp extends StatelessWidget {
 
       },
 
-      home: const LoginScreen(),
+      home: FirebaseAuth.instance.currentUser == null
+    ? const LoginScreen()
+    : const CheckRole(),
+
     );
   }
 }
