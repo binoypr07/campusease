@@ -98,8 +98,8 @@ class StudentDashboard extends StatelessWidget {
                 );
               },
             ),
-
-            const SizedBox(height: 20),
+            // ------------------ QR CODE------------------
+            const SizedBox(height: 10),
             buildCard(
               icon: Icons.qr_code_scanner,
               title: "Smart QR",
