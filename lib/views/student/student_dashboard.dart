@@ -29,10 +29,7 @@ class StudentDashboard extends StatelessWidget {
 
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
         ),
 
         trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
@@ -48,10 +45,7 @@ class StudentDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Student Dashboard"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Student Dashboard"), centerTitle: true),
 
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -67,13 +61,12 @@ class StudentDashboard extends StatelessWidget {
               onTap: () => Get.toNamed('/studentProfile'),
             ),
 
-
             // ------------------ ATTENDANCE ------------------
             buildCard(
-               icon: Icons.calendar_month,
-               title: "Attendance",
-               subtitle: "View your attendance",
-               onTap: () => Get.toNamed('/studentAttendance'),
+              icon: Icons.calendar_month,
+              title: "Attendance",
+              subtitle: "View your attendance",
+              onTap: () => Get.toNamed('/studentAttendance'),
             ),
 
             // ------------------ INTERNAL MARKS ------------------
@@ -106,6 +99,13 @@ class StudentDashboard extends StatelessWidget {
               },
             ),
 
+            const SizedBox(height: 20),
+            buildCard(
+              icon: Icons.qr_code_scanner,
+              title: "Smart QR",
+              subtitle: "Scan ID to view student info",
+              onTap: () => Get.toNamed('/qrScan'),
+            ),
             const SizedBox(height: 20),
 
             // ------------------ LOGOUT ------------------
