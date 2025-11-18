@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'qr.dart';
 
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
@@ -17,7 +20,6 @@ class StudentDashboard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 12),
       child: ListTile(
         leading: Icon(icon, color: Colors.white, size: 32),
-
         title: Text(
           title,
           style: const TextStyle(
@@ -26,14 +28,11 @@ class StudentDashboard extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-
         subtitle: Text(
           subtitle,
           style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
         ),
-
         trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-
         onTap: onTap,
       ),
     );
@@ -44,80 +43,121 @@ class StudentDashboard extends StatelessWidget {
   // ---------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Student Dashboard"), centerTitle: true),
+    final currentUser = FirebaseAuth.instance.currentUser;
 
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            const SizedBox(height: 10),
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser!.uid)
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-            // ------------------ PROFILE ------------------
-            buildCard(
-              icon: Icons.person,
-              title: "My Profile",
-              subtitle: "View personal details",
-              onTap: () => Get.toNamed('/studentProfile'),
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'Student data not found',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
             ),
+          );
+        }
 
-            // ------------------ ATTENDANCE ------------------
-            buildCard(
-              icon: Icons.calendar_month,
-              title: "Attendance",
-              subtitle: "View your attendance",
-              onTap: () => Get.toNamed('/studentAttendance'),
-            ),
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        final studentId = data['admissionNumber'] ?? 'No ID';
+        final studentName = data['name'] ?? 'No Name';
 
-            // ------------------ INTERNAL MARKS ------------------
-            buildCard(
-              icon: Icons.grade,
-              title: "Internal Marks",
-              subtitle: "Subject-wise semester marks",
-              onTap: () {
-                Get.snackbar(
-                  "Coming Soon",
-                  "Internal marks coming!",
-                  backgroundColor: Colors.black,
-                  colorText: Colors.white,
-                );
-              },
-            ),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text("Student Dashboard"),
+            centerTitle: true,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: ListView(
+              children: [
+                const SizedBox(height: 10),
 
-            // ------------------ ANNOUNCEMENTS ------------------
-            buildCard(
-              icon: Icons.notifications,
-              title: "Announcements",
-              subtitle: "Notices from teachers & admin",
-              onTap: () {
-                Get.snackbar(
-                  "Coming Soon",
-                  "Announcements coming soon!",
-                  backgroundColor: Colors.black,
-                  colorText: Colors.white,
-                );
-              },
-            ),
-            // ------------------ QR CODE------------------
-            const SizedBox(height: 10),
-            buildCard(
-              icon: Icons.qr_code_scanner,
-              title: "Smart QR",
-              subtitle: "Scan ID to view student info",
-              onTap: () => Get.toNamed('/qrScan'),
-            ),
-            const SizedBox(height: 20),
+                // ------------------ PROFILE ------------------
+                buildCard(
+                  icon: Icons.person,
+                  title: "My Profile",
+                  subtitle: "View personal details",
+                  onTap: () => Get.toNamed('/studentProfile'),
+                ),
 
-            // ------------------ LOGOUT ------------------
-            ElevatedButton(
-              onPressed: () {
-                Get.offAllNamed('/login');
-              },
-              child: const Text("Logout"),
+                // ------------------ ATTENDANCE ------------------
+                buildCard(
+                  icon: Icons.calendar_month,
+                  title: "Attendance",
+                  subtitle: "View your attendance",
+                  onTap: () => Get.toNamed('/studentAttendance'),
+                ),
+
+                // ------------------ INTERNAL MARKS ------------------
+                buildCard(
+                  icon: Icons.grade,
+                  title: "Internal Marks",
+                  subtitle: "Subject-wise semester marks",
+                  onTap: () {
+                    Get.snackbar(
+                      "Coming Soon",
+                      "Internal marks coming!",
+                      backgroundColor: Colors.black,
+                      colorText: Colors.white,
+                    );
+                  },
+                ),
+
+                // ------------------ ANNOUNCEMENTS ------------------
+                buildCard(
+                  icon: Icons.notifications,
+                  title: "Announcements",
+                  subtitle: "Notices from teachers & admin",
+                  onTap: () {
+                    Get.snackbar(
+                      "Coming Soon",
+                      "Announcements coming soon!",
+                      backgroundColor: Colors.black,
+                      colorText: Colors.white,
+                    );
+                  },
+                ),
+
+                // ------------------ QR CODE ------------------
+                buildCard(
+                  icon: Icons.qr_code,
+                  title: "My QR Code",
+                  subtitle: "Show your student QR",
+                  onTap: () {
+                    Get.to(
+                      () => StudentQRPage(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                // ------------------ LOGOUT ------------------
+                ElevatedButton(
+                  onPressed: () {
+                    Get.offAllNamed('/login');
+                  },
+                  child: const Text("Logout"),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

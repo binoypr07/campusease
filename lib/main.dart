@@ -19,13 +19,12 @@ import 'views/teacher/teacher_profile.dart';
 import 'views/teacher/approve_students.dart';
 import 'views/student/student_profile.dart';
 import 'views/student/student_attendence.dart';
-
+import 'views/student/qr.dart';
+import 'views/student/student_info.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -84,8 +83,8 @@ class MyApp extends StatelessWidget {
         // ---------- BUTTONS ----------
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,  // white button
-            foregroundColor: Colors.black,  // black text
+            backgroundColor: Colors.white, // white button
+            foregroundColor: Colors.black, // black text
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -122,14 +121,14 @@ class MyApp extends StatelessWidget {
         '/approveStudents': (_) => const TeacherApproveStudents(),
         '/studentProfile': (_) => const StudentProfileScreen(),
         '/studentAttendance': (_) => const StudentAttendanceScreen(),
-
-
+        '/qrScan': (_) =>
+            StudentQRPage(studentId: "STU001", studentName: "John Doe"),
+        '/studentInfo': (_) => const StudentInfoPage(),
       },
 
       home: FirebaseAuth.instance.currentUser == null
-    ? const LoginScreen()
-    : const CheckRole(),
-
+          ? const LoginScreen()
+          : const CheckRole(),
     );
   }
 }

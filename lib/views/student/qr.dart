@@ -1,46 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
-import 'package:get/get.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
-class QRScanPage extends StatefulWidget {
-  const QRScanPage({super.key});
+class StudentQRPage extends StatelessWidget {
+  final String studentId;
+  final String studentName;
 
-  @override
-  State<QRScanPage> createState() => _QRScanPageState();
-}
-
-class _QRScanPageState extends State<QRScanPage> {
-  String scannedData = "Scan a QR code";
-
-  Future<void> scanQRCode() async {
-    String result = await FlutterBarcodeScanner.scanBarcode(
-      "#ff6666",
-      "Cancel",
-      true,
-      ScanMode.QR,
-    );
-
-    if (result != "-1") {
-      setState(() {
-        scannedData = result;
-      });
-
-      // Navigate to student info page with scanned ID
-      Get.toNamed('/studentInfo', arguments: result);
-    }
-  }
+  const StudentQRPage({
+    super.key,
+    required this.studentId,
+    required this.studentName,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Smart QR Scanner")),
+      appBar: AppBar(title: const Text("Student QR Code")),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(scannedData, style: const TextStyle(fontSize: 20)),
+            Text(
+              studentName,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 20),
-            ElevatedButton(onPressed: scanQRCode, child: const Text("Scan QR")),
+            QrImageView(
+              data: studentId, // QR encodes the student's admission number
+              version: QrVersions.auto,
+              size: 250,
+              backgroundColor: Colors.white,
+            ),
           ],
         ),
       ),
