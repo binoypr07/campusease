@@ -207,25 +207,28 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   // ---------------- SAVE ATTENDANCE ---------------------
-  Future<void> saveAttendance() async {
-    for (var entry in attendanceData.entries) {
-      String stuId = entry.key;
-      double value = entry.value;
+ Future<void> saveAttendance() async {
+  final batch = FirebaseFirestore.instance.batch();
 
-      await FirebaseFirestore.instance
-          .collection("attendance")
-          .doc(stuId)
-          .set(
-        {selectedDate: value},
-        SetOptions(merge: true),
-      );
-    }
+  attendanceData.forEach((stuId, value) {
+    final ref = FirebaseFirestore.instance
+        .collection("attendance")
+        .doc(stuId);
 
-    Get.snackbar(
-      "Success",
-      "Attendance saved!",
-      backgroundColor: Colors.black,
-      colorText: Colors.white,
+    batch.set(
+      ref,
+      {selectedDate: value},
+      SetOptions(merge: true),
     );
-  }
+  });
+
+  await batch.commit();
+
+  Get.snackbar(
+    "Success",
+    "Attendance saved!",
+    backgroundColor: Colors.black,
+    colorText: Colors.white,
+  );
+}
 }
