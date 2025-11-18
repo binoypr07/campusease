@@ -381,7 +381,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               218,
                               216,
                               220,
-                            ).withOpacity(0.6),
+                            ).withOpacity(0.0),
                             offset: const Offset(0, 3),
                             blurRadius: 6,
                           ),
