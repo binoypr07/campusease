@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/services/firebase_auth_service.dart';
 import '../../models/user_model.dart';
+import 'package:flutter/services.dart';
 
 class RegisterStudent extends StatefulWidget {
   const RegisterStudent({super.key});
@@ -13,6 +14,7 @@ class RegisterStudent extends StatefulWidget {
 class _RegisterStudentState extends State<RegisterStudent> {
   TextEditingController name = TextEditingController();
   TextEditingController email = TextEditingController();
+  TextEditingController phone = TextEditingController();
   TextEditingController password = TextEditingController();
   TextEditingController admissionNumber = TextEditingController();
 
@@ -33,23 +35,62 @@ class _RegisterStudentState extends State<RegisterStudent> {
     "Economics",
     "Commerce",
     "Zoology",
-    "Botany"
+    "Botany",
   ];
 
   final List<String> classList = [
-    "CS1","CS2","CS3","CS4",
-    "PHY1","PHY2","PHY3","PHY4",
-    "CHE1","CHE2","CHE3","CHE4",
-    "IC1","IC2","IC3","IC4",
-    "MAT1","MAT2","MAT3","MAT4",
-    "ZOO1","ZOO2","ZOO3","ZOO4",
-    "BOO1","BOO2","BOO3","BOO4",
-    "BCOM1","BCOM2","BCOM3","BCOM4",
-    "ECO1","ECO2","ECO3","ECO4",
-    "HIN1","HIN2","HIN3","HIN4",
-    "HIS1","HIS2","HIS3","HIS3",
-    "ENG1","ENG2","ENG3","ENG4",
-    "MAL1","MAL2","MAL3","MAL4",
+    "CS1",
+    "CS2",
+    "CS3",
+    "CS4",
+    "PHY1",
+    "PHY2",
+    "PHY3",
+    "PHY4",
+    "CHE1",
+    "CHE2",
+    "CHE3",
+    "CHE4",
+    "IC1",
+    "IC2",
+    "IC3",
+    "IC4",
+    "MAT1",
+    "MAT2",
+    "MAT3",
+    "MAT4",
+    "ZOO1",
+    "ZOO2",
+    "ZOO3",
+    "ZOO4",
+    "BOO1",
+    "BOO2",
+    "BOO3",
+    "BOO4",
+    "BCOM1",
+    "BCOM2",
+    "BCOM3",
+    "BCOM4",
+    "ECO1",
+    "ECO2",
+    "ECO3",
+    "ECO4",
+    "HIN1",
+    "HIN2",
+    "HIN3",
+    "HIN4",
+    "HIS1",
+    "HIS2",
+    "HIS3",
+    "HIS3",
+    "ENG1",
+    "ENG2",
+    "ENG3",
+    "ENG4",
+    "MAL1",
+    "MAL2",
+    "MAL3",
+    "MAL4",
   ];
 
   bool loading = false;
@@ -69,7 +110,6 @@ class _RegisterStudentState extends State<RegisterStudent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // ------------------- NAME -------------------
             const Text("Full Name", style: TextStyle(color: Colors.white70)),
             TextField(
@@ -88,9 +128,25 @@ class _RegisterStudentState extends State<RegisterStudent> {
             ),
             const SizedBox(height: 20),
 
+            // ------------------- PHONENUMBER -------------------
+            const Text("Phone", style: TextStyle(color: Colors.white70)),
+            TextField(
+              controller: phone,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly, // only allow digits
+                LengthLimitingTextInputFormatter(10), // max 10 digits
+              ],
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(),
+            ),
+            const SizedBox(height: 20),
+
             // ------------------- ADMISSION NUMBER -------------------
-            const Text("Admission Number (Required)",
-                style: TextStyle(color: Colors.white70)),
+            const Text(
+              "Admission Number (Required)",
+              style: TextStyle(color: Colors.white70),
+            ),
             TextField(
               controller: admissionNumber,
               keyboardType: TextInputType.number,
@@ -107,10 +163,15 @@ class _RegisterStudentState extends State<RegisterStudent> {
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(),
               items: departments
-                  .map((d) => DropdownMenuItem(
-                        value: d,
-                        child: Text(d, style: const TextStyle(color: Colors.white)),
-                      ))
+                  .map(
+                    (d) => DropdownMenuItem(
+                      value: d,
+                      child: Text(
+                        d,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (value) => setState(() => selectedDept = value),
             ),
@@ -124,10 +185,15 @@ class _RegisterStudentState extends State<RegisterStudent> {
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(),
               items: classList
-                  .map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Text(c, style: const TextStyle(color: Colors.white)),
-                      ))
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(
+                        c,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (value) => setState(() => selectedClass = value),
             ),
@@ -154,10 +220,7 @@ class _RegisterStudentState extends State<RegisterStudent> {
                 ),
                 child: loading
                     ? const CircularProgressIndicator(color: Colors.black)
-                    : const Text(
-                        "Register",
-                        style: TextStyle(fontSize: 17),
-                      ),
+                    : const Text("Register", style: TextStyle(fontSize: 17)),
               ),
             ),
           ],

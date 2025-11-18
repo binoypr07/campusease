@@ -71,6 +71,10 @@ class StudentDashboard extends StatelessWidget {
         final data = snapshot.data!.data() as Map<String, dynamic>;
         final studentId = data['admissionNumber'] ?? 'No ID';
         final studentName = data['name'] ?? 'No Name';
+        final studentPhone = data['phone'] ?? 'No Phone';
+        final studentDepartment = data['department'] ?? 'No Department';
+        final studentClass = data['classYear'] ?? 'No Class';
+        final studentSemester = data['semester'] ?? 1;
 
         return Scaffold(
           appBar: AppBar(
@@ -137,13 +141,16 @@ class StudentDashboard extends StatelessWidget {
                   onTap: () {
                     Get.to(
                       () => StudentQRPage(
-                        studentId: studentId,
-                        studentName: studentName,
+                        studentId: data['admissionNumber'] ?? '',
+                        studentName: data['name'] ?? '',
+                        phone: data['phone'] ?? '',
+                        department: data['department'] ?? '',
+                        classYear: data['classYear'] ?? '',
+                        semester: data['semester'] ?? 1,
                       ),
                     );
                   },
                 ),
-
                 const SizedBox(height: 20),
 
                 // ------------------ LOGOUT ------------------

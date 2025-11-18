@@ -121,8 +121,6 @@ class MyApp extends StatelessWidget {
         '/approveStudents': (_) => const TeacherApproveStudents(),
         '/studentProfile': (_) => const StudentProfileScreen(),
         '/studentAttendance': (_) => const StudentAttendanceScreen(),
-        '/qrScan': (_) =>
-            StudentQRPage(studentId: "STU001", studentName: "John Doe"),
         '/studentInfo': (_) => const StudentInfoPage(),
       },
 
