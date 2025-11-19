@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'core/services/push_notification_service.dart';
 
-
 // ROUTES
 import 'views/admin/admin_dashboard.dart';
 import 'views/admin/pending_users.dart';
@@ -29,7 +28,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await PushNotificationService.initialize();
   runApp(const MyApp());
- }
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -125,6 +124,9 @@ class MyApp extends StatelessWidget {
         '/studentProfile': (_) => const StudentProfileScreen(),
         '/studentAttendance': (_) => const StudentAttendanceScreen(),
         '/studentInfo': (_) => const StudentInfoPage(),
+
+        '/login': (_) => const LoginScreen(),
+        '/teacherDashboard': (_) => const TeacherDashboard(),
       },
 
       home: FirebaseAuth.instance.currentUser == null

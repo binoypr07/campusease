@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'editable_timetable_page.dart';
 
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
@@ -20,7 +21,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     loadTeacherClass();
   }
 
-  // 🔥 Load assigned class of teacher
+  // Load assigned class of teacher
   Future<void> loadTeacherClass() async {
     String uid = FirebaseAuth.instance.currentUser!.uid;
 
@@ -65,17 +66,12 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     if (loading) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Teacher Dashboard"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("Teacher Dashboard"), centerTitle: true),
 
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -108,16 +104,48 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   : "Class: $assignedClass",
               onTap: () {
                 if (assignedClass == null || assignedClass!.isEmpty) {
-                  Get.snackbar("Class Not Assigned",
-                      "Please assign a class first!",
-                      backgroundColor: Colors.black, colorText: Colors.white);
+                  Get.snackbar(
+                    "Class Not Assigned",
+                    "Please assign a class first!",
+                    backgroundColor: Colors.black,
+                    colorText: Colors.white,
+                  );
                 } else {
                   Get.toNamed('/attendance');
                 }
               },
             ),
 
-            // 🔥 ASSIGN CLASS (ONLY IF NOT ASSIGNED)
+            // ------------------ Time Table------------------
+           
+            buildCard(
+              icon: Icons.schedule,
+              title: "Time Table",
+              subtitle: assignedClass == null
+                  ? "Assign class first"
+                  : "Edit your class timetable",
+              onTap: () {
+                if (assignedClass == null || assignedClass!.isEmpty) {
+                  Get.snackbar(
+                    "Class Not Assigned",
+                    "Please assign a class first!",
+                    backgroundColor: Colors.black,
+                    colorText: Colors.white,
+                  );
+                  return; // stop here if no class assigned
+                }
+
+                // Use standard Navigator instead of Get.to
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        EditableTimetablePage(className: assignedClass!),
+                  ),
+                );
+              },
+            ),
+            //  ASSIGN CLASS (ONLY IF NOT ASSIGNED)
             if (assignedClass == null || assignedClass!.isEmpty)
               buildCard(
                 icon: Icons.class_,

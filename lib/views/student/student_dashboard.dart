@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'qr.dart';
+import 'timetable_page.dart';
 
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
@@ -113,7 +114,22 @@ class StudentDashboard extends StatelessWidget {
                       "Coming Soon",
                       "Internal marks coming!",
                       backgroundColor: Colors.black,
-                      colorText: Colors.white,
+                      colorText: const Color.fromARGB(255, 216, 211, 211),
+                    );
+                  },
+                ),
+
+                // ------------------ Time Table------------------
+                buildCard(
+                  icon: Icons.schedule,
+                  title: "Time Table",
+                  subtitle: "View your daily schedule",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TimetablePage(),
+                      ),
                     );
                   },
                 ),
@@ -128,7 +144,7 @@ class StudentDashboard extends StatelessWidget {
                       "Coming Soon",
                       "Announcements coming soon!",
                       backgroundColor: Colors.black,
-                      colorText: Colors.white,
+                      colorText: const Color.fromARGB(255, 238, 236, 236),
                     );
                   },
                 ),
