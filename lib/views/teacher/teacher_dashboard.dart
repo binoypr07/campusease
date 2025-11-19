@@ -115,6 +115,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 }
               },
             ),
+            buildCard(
+              icon: Icons.campaign,
+              title: "Announcements",
+              subtitle: "Send notice to department/class",
+              onTap: () => Get.toNamed('/createAnnouncement'),
+            ),
+
 
             // ------------------ Time Table------------------
            

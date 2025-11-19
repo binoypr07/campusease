@@ -22,6 +22,7 @@ import 'views/student/student_profile.dart';
 import 'views/student/student_attendence.dart';
 import 'views/student/qr.dart';
 import 'views/student/student_info.dart';
+import 'views/announcements/create_announcement.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -124,9 +125,6 @@ class MyApp extends StatelessWidget {
         '/studentProfile': (_) => const StudentProfileScreen(),
         '/studentAttendance': (_) => const StudentAttendanceScreen(),
         '/studentInfo': (_) => const StudentInfoPage(),
-         
-        '/login': (_) => const LoginScreen(),
-        '/teacherDashboard': (_) => const TeacherDashboard(),
       },
 
       home: FirebaseAuth.instance.currentUser == null
