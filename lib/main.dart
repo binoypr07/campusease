@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'core/services/push_notification_service.dart';
+
 
 // ROUTES
 import 'views/admin/admin_dashboard.dart';
@@ -25,8 +27,9 @@ import 'views/student/student_info.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await PushNotificationService.initialize();
   runApp(const MyApp());
-}
+ }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

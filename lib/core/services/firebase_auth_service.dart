@@ -28,6 +28,7 @@ class FirebaseAuthService {
       }
 
       return user;
+      
     } catch (e) {
       print("Login error: $e");
       return null;
