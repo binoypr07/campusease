@@ -124,7 +124,7 @@ class MyApp extends StatelessWidget {
         '/studentProfile': (_) => const StudentProfileScreen(),
         '/studentAttendance': (_) => const StudentAttendanceScreen(),
         '/studentInfo': (_) => const StudentInfoPage(),
-
+         
         '/login': (_) => const LoginScreen(),
         '/teacherDashboard': (_) => const TeacherDashboard(),
       },
