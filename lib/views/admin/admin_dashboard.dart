@@ -126,6 +126,13 @@ class AdminDashboard extends StatelessWidget {
                 );
               },
             ),
+            buildCard(
+               icon: Icons.campaign,
+               title: "Announcements",
+               subtitle: "Send updates to teachers & students",
+               onTap: () => Get.toNamed('/createAnnouncement'),
+            ),
+
 
             const SizedBox(height: 20),
 
