@@ -139,14 +139,7 @@ class StudentDashboard extends StatelessWidget {
                   icon: Icons.notifications,
                   title: "Announcements",
                   subtitle: "Notices from teachers & admin",
-                  onTap: () {
-                    Get.snackbar(
-                      "Coming Soon",
-                      "Announcements coming soon!",
-                      backgroundColor: Colors.black,
-                      colorText: const Color.fromARGB(255, 238, 236, 236),
-                    );
-                  },
+                  onTap: () => Get.toNamed('/studentAnnouncements'),
                 ),
 
                 // ------------------ QR CODE ------------------

@@ -118,8 +118,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             buildCard(
               icon: Icons.campaign,
               title: "Announcements",
-              subtitle: "Send notice to department/class",
-              onTap: () => Get.toNamed('/createAnnouncement'),
+              subtitle: "create & view",
+              onTap: () => Get.toNamed('/teacherAnnouncements'),
             ),
 
 

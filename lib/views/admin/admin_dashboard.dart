@@ -116,23 +116,11 @@ class AdminDashboard extends StatelessWidget {
             buildCard(
               icon: Icons.campaign,
               title: "Announcements",
-              subtitle: "Post notices to teachers & students",
+              subtitle: "create & view",
               onTap: () {
-                Get.snackbar(
-                  "Info",
-                  "Feature coming soon!",
-                  backgroundColor: Colors.black,
-                  colorText: Colors.white,
-                );
+                Get.toNamed('/adminAnnouncements');
               },
             ),
-            buildCard(
-               icon: Icons.campaign,
-               title: "Announcements",
-               subtitle: "Send updates to teachers & students",
-               onTap: () => Get.toNamed('/createAnnouncement'),
-            ),
-
 
             const SizedBox(height: 20),
 

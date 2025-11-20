@@ -4,7 +4,9 @@ import 'firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'core/services/push_notification_service.dart';
+import 'core/services/notification_service.dart';
+
+
 
 
 // ROUTES
@@ -24,12 +26,15 @@ import 'views/student/student_profile.dart';
 import 'views/student/student_attendence.dart';
 import 'views/student/qr.dart';
 import 'views/student/student_info.dart';
+import 'views/admin/admin_announcements.dart';
+import 'views/teacher/teacher_announcements.dart';
+import 'views/student/student_announcements.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await PushNotificationService.initialize();
+  await NotificationService.init();
   runApp(const MyApp());
 }
 
@@ -127,6 +132,9 @@ class MyApp extends StatelessWidget {
         '/studentProfile': (_) => const StudentProfileScreen(),
         '/studentAttendance': (_) => const StudentAttendanceScreen(),
         '/studentInfo': (_) => const StudentInfoPage(),
+        '/adminAnnouncements': (_) => const AdminAnnouncementsScreen(),
+        '/teacherAnnouncements': (_) => const TeacherAnnouncementsScreen(),
+        '/studentAnnouncements': (_) => const StudentAnnouncementsScreen(),
       },
 
       home: FirebaseAuth.instance.currentUser == null
