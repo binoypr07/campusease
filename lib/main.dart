@@ -3,7 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/services/push_notification_service.dart';
+
 
 // ROUTES
 import 'views/admin/admin_dashboard.dart';
@@ -22,7 +24,7 @@ import 'views/student/student_profile.dart';
 import 'views/student/student_attendence.dart';
 import 'views/student/qr.dart';
 import 'views/student/student_info.dart';
-import 'views/announcements/create_announcement.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
