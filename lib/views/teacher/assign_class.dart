@@ -14,21 +14,61 @@ class _AssignClassScreenState extends State<AssignClassScreen> {
   String? teacherUid;
   String? teacherName;
   String? assignedClass;
+  bool loading = true;
 
   final List<String> classList = [
-   "CS1","CS2","CS3","CS4",
-   "PHY1","PHY2","PHY3","PHY4",
-   "CHE1","CHE2","CHE3","CHE4",
-   "IC1","IC2","IC3","IC4",
-   "MAT1","MAT2","MAT3","MAT4",
-   "ZOO1","ZOO2","ZOO3","ZOO4",
-   "BOO1","BOO2","BOO3","BOO4",
-   "BCOM1","BCOM2","BCOM3","BCOM4",
-   "ECO1","ECO2","ECO3","ECO4",
-   "HIN1","HIN2","HIN3","HIN4",
-   "HIS1","HIS2","HIS3","HIS3",
-   "ENG1","ENG2","ENG3","ENG4",
-   "MAL1","MAL2","MAL3","MAL4",
+    "CS1",
+    "CS2",
+    "CS3",
+    "CS4",
+    "PHY1",
+    "PHY2",
+    "PHY3",
+    "PHY4",
+    "CHE1",
+    "CHE2",
+    "CHE3",
+    "CHE4",
+    "IC1",
+    "IC2",
+    "IC3",
+    "IC4",
+    "MAT1",
+    "MAT2",
+    "MAT3",
+    "MAT4",
+    "ZOO1",
+    "ZOO2",
+    "ZOO3",
+    "ZOO4",
+    "BOO1",
+    "BOO2",
+    "BOO3",
+    "BOO4",
+    "BCOM1",
+    "BCOM2",
+    "BCOM3",
+    "BCOM4",
+    "ECO1",
+    "ECO2",
+    "ECO3",
+    "ECO4",
+    "HIN1",
+    "HIN2",
+    "HIN3",
+    "HIN4",
+    "HIS1",
+    "HIS2",
+    "HIS3",
+    "HIS4",
+    "ENG1",
+    "ENG2",
+    "ENG3",
+    "ENG4",
+    "MAL1",
+    "MAL2",
+    "MAL3",
+    "MAL4",
   ];
 
   Map<String, dynamic> occupiedClasses = {};
@@ -36,13 +76,21 @@ class _AssignClassScreenState extends State<AssignClassScreen> {
   @override
   void initState() {
     super.initState();
-    loadTeacher();
-    loadOccupiedClasses();
+    loadData();
+  }
+
+  Future<void> loadData() async {
+    await loadTeacher();
+    await loadOccupiedClasses();
+    setState(() => loading = false);
   }
 
   Future<void> loadTeacher() async {
     String uid = FirebaseAuth.instance.currentUser!.uid;
-    var doc = await FirebaseFirestore.instance.collection("users").doc(uid).get();
+    var doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .get();
 
     setState(() {
       teacherUid = uid;
@@ -52,19 +100,17 @@ class _AssignClassScreenState extends State<AssignClassScreen> {
   }
 
   Future<void> loadOccupiedClasses() async {
-    var snap =
-        await FirebaseFirestore.instance.collection("classAssignments").get();
-
+    var snap = await FirebaseFirestore.instance
+        .collection("classAssignments")
+        .get();
     Map<String, dynamic> temp = {};
     for (var doc in snap.docs) {
       temp[doc.id] = doc.data()["teacherUid"];
     }
-
     setState(() => occupiedClasses = temp);
   }
 
   Future<void> assignClass(String className) async {
-    // Prevent overwrite if already taken
     if (occupiedClasses[className] != null) {
       Get.snackbar(
         "Class Occupied",
@@ -79,18 +125,12 @@ class _AssignClassScreenState extends State<AssignClassScreen> {
     await FirebaseFirestore.instance
         .collection("classAssignments")
         .doc(className)
-        .set({
-      "teacherUid": teacherUid,
-      "teacherName": teacherName,
-    });
+        .set({"teacherUid": teacherUid, "teacherName": teacherName});
 
     // Save in teacher profile
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(teacherUid)
-        .update({
-      "assignedClass": className,
-    });
+    await FirebaseFirestore.instance.collection("users").doc(teacherUid).update(
+      {"assignedClass": className},
+    );
 
     Get.snackbar(
       "Assigned",
@@ -99,13 +139,13 @@ class _AssignClassScreenState extends State<AssignClassScreen> {
       colorText: Colors.white,
     );
 
-    loadOccupiedClasses();
-    loadTeacher();
+    // Return assigned class to previous screen
+    Get.back(result: className);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (teacherUid == null || occupiedClasses.isEmpty) {
+    if (loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
@@ -152,11 +192,7 @@ class _AssignClassScreenState extends State<AssignClassScreen> {
               trailing: isTaken
                   ? const Icon(Icons.lock, color: Colors.red)
                   : const Icon(Icons.arrow_forward_ios, color: Colors.white),
-              onTap: isTaken
-                  ? null
-                  : () {
-                      assignClass(className);
-                    },
+              onTap: isTaken ? null : () => assignClass(className),
             ),
           );
         },

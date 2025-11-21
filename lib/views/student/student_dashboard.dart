@@ -74,8 +74,9 @@ class StudentDashboard extends StatelessWidget {
         final studentName = data['name'] ?? 'No Name';
         final studentPhone = data['phone'] ?? 'No Phone';
         final studentDepartment = data['department'] ?? 'No Department';
-        final studentClass = data['classYear'] ?? 'No Class';
+        final studentClass = data['classYear'] ?? '';
         final studentSemester = data['semester'] ?? 1;
+        final assignedClass = data['assignedClass'] ?? '';
 
         return Scaffold(
           appBar: AppBar(
@@ -125,10 +126,21 @@ class StudentDashboard extends StatelessWidget {
                   title: "Time Table",
                   subtitle: "View your daily schedule",
                   onTap: () {
+                    if (assignedClass.isEmpty) {
+                      Get.snackbar(
+                        "Class Not Assigned",
+                        "Your class is not assigned yet",
+                        backgroundColor: Colors.black,
+                        colorText: Colors.white,
+                      );
+                      return;
+                    }
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TimetablePage(),
+                        builder: (context) =>
+                            TimetablePage(className: assignedClass),
                       ),
                     );
                   },
@@ -150,12 +162,12 @@ class StudentDashboard extends StatelessWidget {
                   onTap: () {
                     Get.to(
                       () => StudentQRPage(
-                        studentId: data['admissionNumber'] ?? '',
-                        studentName: data['name'] ?? '',
-                        phone: data['phone'] ?? '',
-                        department: data['department'] ?? '',
-                        classYear: data['classYear'] ?? '',
-                        semester: data['semester'] ?? 1,
+                        studentId: studentId,
+                        studentName: studentName,
+                        phone: studentPhone,
+                        department: studentDepartment,
+                        classYear: studentClass,
+                        semester: studentSemester,
                       ),
                     );
                   },
