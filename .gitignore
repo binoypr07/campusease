@@ -1,45 +1,96 @@
-# Miscellaneous
+# -------------------------
+# Flutter / Dart / Pub
+# -------------------------
+.dart_tool/
+.packages
+.pub/
+.build/
+build/
+coverage/
+flutter_*.png
+flutter_export_environment.sh
+generated_plugin_registrant.dart
+
+# -------------------------
+# Android
+# -------------------------
+android/.gradle/
+android/local.properties
+android/app/build/
+android/app/intermediates/
+android/app/generated/
+android/app/.cxx/
+android/app/profile/
+android/app/release/
+android/app/debug/
+android/app/merged_native_libs/
+android/app/merged_assets/
+android/app/tmp/
+
+# Don't track keystore files
+*.keystore
+*.jks
+
+# -------------------------
+# iOS
+# -------------------------
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/.last_build_id
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.*
+ios/build/
+
+# -------------------------
+# Linux / Windows / macOS
+# -------------------------
+linux/flutter/
+macos/Flutter/
+windows/flutter/
+
+# -------------------------
+# Web
+# -------------------------
+web/.dart_tool/
+web/.flutter-plugins
+web/.flutter-plugins-dependencies
+
+# -------------------------
+# Binaries
+# -------------------------
+*.so
+*.aac
+*.apk
+*.aab
+*.ipa
+*.jar
+*.dll
+*.obj
+*.o
+*.pyc
 *.class
 *.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+*.map.json
+app.*.symbols
+app.*.map.json
 
-# IntelliJ related
+# -------------------------
+# IDE/STUDIO
+# -------------------------
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
+.atom/
+.history
+.svn/
+.swiftpm/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code (optional – comment if needed)
+.vscode/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# -------------------------
+# Misc
+# -------------------------
+.DS_Store
+.migrate_working_dir/
