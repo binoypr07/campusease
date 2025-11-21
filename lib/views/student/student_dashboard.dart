@@ -76,7 +76,14 @@ class StudentDashboard extends StatelessWidget {
         final studentDepartment = data['department'] ?? 'No Department';
         final studentClass = data['classYear'] ?? '';
         final studentSemester = data['semester'] ?? 1;
-        final assignedClass = data['assignedClass'] ?? '';
+
+        // -------------------- FIX HERE --------------------
+        final assignedClass =
+            data['classYear'] ??
+            ''; // <-- use classYear instead of assignedClass
+        print("DEBUG: assignedClass after toString → $assignedClass");
+        print("DEBUG: full student data → $data");
+        // -------------------------------------------------
 
         return Scaffold(
           appBar: AppBar(
@@ -126,6 +133,8 @@ class StudentDashboard extends StatelessWidget {
                   title: "Time Table",
                   subtitle: "View your daily schedule",
                   onTap: () {
+                    print("DEBUG: assignedClass = $assignedClass");
+
                     if (assignedClass.isEmpty) {
                       Get.snackbar(
                         "Class Not Assigned",

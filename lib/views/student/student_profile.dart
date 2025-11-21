@@ -35,7 +35,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
 
     if (doc.exists) {
       setState(() {
-        studentData = doc.data();
+        studentData = Map<String, dynamic>.from(doc.data()!); // safe casting
       });
     }
   }
@@ -53,14 +53,19 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
 
     if (!doc.exists) return;
 
-    Map data = doc.data()!;
+    Map<String, dynamic> data = Map<String, dynamic>.from(
+      doc.data()!,
+    ); // safe cast
 
     totalDays = data.length;
-    presentDays = data.values.where((v) => v == 1.0).length;
+    presentDays = data.values.where((v) => v == 1.0 || v == 1).length;
 
     if (totalDays > 0) {
-      attendancePercentage =
-          (presentDays / totalDays * 100).toStringAsFixed(1) as double;
+      attendancePercentage = double.parse(
+        (presentDays / totalDays * 100).toStringAsFixed(1),
+      );
+    } else {
+      attendancePercentage = 0;
     }
 
     setState(() {});
@@ -80,10 +85,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         ),
         subtitle: Text(
           value,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.white,
-          ),
+          style: const TextStyle(fontSize: 16, color: Colors.white),
         ),
       ),
     );
@@ -93,18 +95,12 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   Widget build(BuildContext context) {
     if (studentData == null) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Profile"),
-        centerTitle: true,
-      ),
-
+      appBar: AppBar(title: const Text("My Profile"), centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -112,15 +108,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             const CircleAvatar(
               radius: 45,
               backgroundColor: Colors.white,
-              child: Icon(
-                Icons.person,
-                size: 55,
-                color: Colors.black,
-              ),
+              child: Icon(Icons.person, size: 55, color: Colors.black),
             ),
-
             const SizedBox(height: 16),
-
             Center(
               child: Text(
                 studentData!["name"] ?? "",
@@ -131,15 +121,17 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 30),
 
             // BASIC INFO
             infoTile("Email", studentData!["email"] ?? "-"),
             infoTile("Department", studentData!["department"] ?? "-"),
             infoTile("Class", studentData!["classYear"] ?? "-"),
-            infoTile("Admission Number", studentData!["admissionNumber"] ?? "-"),
-            infoTile("Semester", studentData!["semester"].toString()),
+            infoTile(
+              "Admission Number",
+              studentData!["admissionNumber"] ?? "-",
+            ),
+            infoTile("Semester", studentData!["semester"]?.toString() ?? "-"),
 
             const SizedBox(height: 20),
 
@@ -152,17 +144,23 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 title: const Text(
                   "Attendance Summary",
                   style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Total Days: $totalDays",
-                        style: const TextStyle(color: Colors.white)),
-                    Text("Present Days: $presentDays",
-                        style: const TextStyle(color: Colors.white)),
                     Text(
-                      "Attendance %: ${totalDays == 0 ? "0" : ((presentDays / totalDays) * 100).toStringAsFixed(1)}%",
+                      "Total Days: $totalDays",
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      "Present Days: $presentDays",
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      "Attendance %: $attendancePercentage%",
                       style: const TextStyle(color: Colors.white),
                     ),
                   ],
@@ -178,7 +176,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 title: const Text(
                   "Internal Marks",
                   style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 subtitle: const Text(
                   "This feature will be added later...",

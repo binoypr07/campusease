@@ -22,35 +22,48 @@ class _TimetablePageState extends State<TimetablePage> {
   }
 
   Future<void> loadTimetable() async {
+    print("DEBUG: Loading timetable for class → ${widget.className}");
+
     try {
       var doc = await FirebaseFirestore.instance
           .collection('timetables')
           .doc(widget.className)
           .get();
 
+      print("DEBUG: doc.exists → ${doc.exists}");
+      print("DEBUG: Firestore document → ${doc.data()}");
+
       if (doc.exists) {
-        List data = doc['entries'] ?? [];
-        timetable = data.map((e) => TimetableEntry(
-          subject: e['subject'] ?? '',
-          time: e['time'] ?? '',
-          teacher: e['teacher'] ?? '',
-          room: e['room'] ?? '',
-        )).toList();
+        List data = doc.data()?['entries'] ?? [];
+
+        print("DEBUG: Entries length → ${data.length}");
+
+        timetable = data.map((e) {
+          print("DEBUG: Entry loaded → $e"); // prints each timetable item
+
+          return TimetableEntry(
+            subject: e['subject'] ?? '',
+            time: e['time'] ?? '',
+            teacher: e['teacher'] ?? '',
+            room: e['room'] ?? '',
+          );
+        }).toList();
+      } else {
+        print("DEBUG: NO timetable found for this class!");
       }
     } catch (e) {
-      print("Error loading timetable: $e");
+      print("ERROR loading timetable → $e");
       timetable = [];
     } finally {
       setState(() => loading = false);
+      print("DEBUG: UI updated");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -58,6 +71,7 @@ class _TimetablePageState extends State<TimetablePage> {
       body: ListView.builder(
         itemCount: timetable.length,
         itemBuilder: (context, index) {
+          print("DEBUG: Rendering entry index → $index");
           return TimetableCardWidget(entry: timetable[index]);
         },
       ),
