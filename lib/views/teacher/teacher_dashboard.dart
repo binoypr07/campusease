@@ -21,7 +21,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     loadTeacherClass();
   }
 
-  // Load assigned class of teacher
+  // ------------------- UPDATE THIS FUNCTION -------------------
   Future<void> loadTeacherClass() async {
     String uid = FirebaseAuth.instance.currentUser!.uid;
 
@@ -30,10 +30,14 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         .doc(uid)
         .get();
 
+    // Safely read assignedClass without crashing
     setState(() {
-      assignedClass = doc["assignedClass"];
+      assignedClass = doc.data()?["assignedClass"] as String?;
       loading = false;
     });
+
+    // Debugging: check if class is loaded
+    print("Assigned class: $assignedClass");
   }
 
   Widget buildCard({
@@ -115,6 +119,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 }
               },
             ),
+
+            // ANNOUNCEMENTS
             buildCard(
               icon: Icons.campaign,
               title: "Announcements",
@@ -122,13 +128,11 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               onTap: () => Get.toNamed('/teacherAnnouncements'),
             ),
 
-
-            // ------------------ Time Table------------------
-           
+            // ------------------ Time Table ------------------
             buildCard(
               icon: Icons.schedule,
               title: "Time Table",
-              subtitle: assignedClass == null
+              subtitle: (assignedClass == null || assignedClass!.isEmpty)
                   ? "Assign class first"
                   : "Edit your class timetable",
               onTap: () {
@@ -142,7 +146,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                   return; // stop here if no class assigned
                 }
 
-                // Use standard Navigator instead of Get.to
+                // Navigate to EditableTimetablePage
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -152,6 +156,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 );
               },
             ),
+
             //  ASSIGN CLASS (ONLY IF NOT ASSIGNED)
             if (assignedClass == null || assignedClass!.isEmpty)
               buildCard(
