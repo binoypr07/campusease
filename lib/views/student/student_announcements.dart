@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
 
 class StudentAnnouncementsScreen extends StatefulWidget {
   const StudentAnnouncementsScreen({super.key});
@@ -13,72 +12,43 @@ class StudentAnnouncementsScreen extends StatefulWidget {
 
 class _StudentAnnouncementsScreenState
     extends State<StudentAnnouncementsScreen> {
-  String? studentDept;
-  String? studentClass;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String uid = FirebaseAuth.instance.currentUser!.uid;
+
+  String? classYear;
+  String? department;
   bool loading = true;
 
   @override
   void initState() {
     super.initState();
-    loadStudentDetails();
+    loadStudentInfo();
   }
 
-  Future<void> loadStudentDetails() async {
-    String uid = FirebaseAuth.instance.currentUser!.uid;
-
-    var doc =
-        await FirebaseFirestore.instance.collection("users").doc(uid).get();
-
+  Future<void> loadStudentInfo() async {
+    var doc = await _db.collection("users").doc(uid).get();
     if (doc.exists) {
-      studentDept = doc["department"];
-      studentClass = doc["classYear"];
+      var data = doc.data()!;
+      classYear = data["classYear"];
+      department = data["department"];
     }
-
-    setState(() {
-      loading = false;
-    });
-  }
-
-  bool canSeeAnnouncement(Map<String, dynamic> data) {
-    String target = data["target"];
-    String value = data["targetValue"] ?? "";
-
-    if (target == "all") return true;
-    if (target == "department" && value == studentDept) return true;
-    if (target == "class" && value == studentClass) return true;
-
-    return false;
-  }
-
-  Widget buildTag(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
-      ),
-    );
+    setState(() => loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return  Scaffold(
-        appBar: AppBar(title: Text("Announcements")),
-        body: Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Announcements"),
-      ),
+      backgroundColor: Colors.black,
+      appBar: AppBar(title: const Text("Announcements")),
       body: StreamBuilder(
-        stream: FirebaseFirestore.instance
+        stream: _db
             .collection("announcements")
             .orderBy("createdAt", descending: true)
             .snapshots(),
@@ -88,97 +58,54 @@ class _StudentAnnouncementsScreenState
                 child: CircularProgressIndicator(color: Colors.white));
           }
 
-          var docs = snapshot.data!.docs;
+          var allDocs = snapshot.data!.docs;
 
-          // filter announcements student is allowed to see
-          var filtered = docs.where((doc) {
-            return canSeeAnnouncement(doc.data());
+          // -------------------------
+          // FILTER LOGIC FOR STUDENTS
+          // -------------------------
+          var filtered = allDocs.where((doc) {
+            var a = doc.data();
+            String audience = a["audienceType"] ?? "all";
+
+            return audience == "all" ||
+                audience == "students" ||
+                audience == classYear ||
+                audience == department;
           }).toList();
 
           if (filtered.isEmpty) {
             return const Center(
               child: Text(
-                "No announcements available",
-                style: TextStyle(color: Colors.white70, fontSize: 18),
+                "No announcements for you",
+                style: TextStyle(color: Colors.white, fontSize: 18),
               ),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             itemCount: filtered.length,
             itemBuilder: (context, index) {
-              var ann = filtered[index].data();
-              String title = ann["title"];
-              String msg = ann["message"];
-              Timestamp ts = ann["createdAt"];
-              String sender = ann["createdBy"];
-              String target = ann["target"];
-              String value = ann["targetValue"] ?? "";
-
-              String time = DateFormat("d MMM, h:mm a")
-                  .format(ts.toDate());
+              var a = filtered[index].data();
 
               return Card(
-                margin: const EdgeInsets.only(bottom: 16),
                 color: Colors.black,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  side: const BorderSide(color: Colors.white, width: 1.3),
+                  borderRadius: BorderRadius.circular(12),
+                  side:
+                      const BorderSide(color: Colors.white70, width: 1.2),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // TITLE
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // MESSAGE
-                      Text(
-                        msg,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      Row(
-                        children: [
-                          // TAG
-                          if (target == "all") buildTag("Global"),
-                          if (target == "department") buildTag("Department: $value"),
-                          if (target == "class") buildTag("Class: $value"),
-
-                          const Spacer(),
-
-                          Text(
-                            time,
-                            style: const TextStyle(
-                                color: Colors.white54, fontSize: 12),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      Text(
-                        "By: $sender",
-                        style:
-                            const TextStyle(color: Colors.white38, fontSize: 12),
-                      ),
-                    ],
+                child: ListTile(
+                  title: Text(
+                    a["title"] ?? "",
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    a["message"] ?? "",
+                    style: const TextStyle(color: Colors.white70),
                   ),
                 ),
               );
