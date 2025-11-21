@@ -56,6 +56,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.white,
 
         // ---------- APPBAR ----------
+      
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
