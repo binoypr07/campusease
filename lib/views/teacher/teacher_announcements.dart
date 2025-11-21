@@ -260,6 +260,7 @@ class _TeacherAnnouncementsScreenState
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('announcements')
+                    .where('audience',whereIn:['all','teachers'])
                     .orderBy('timestamp', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {

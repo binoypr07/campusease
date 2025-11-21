@@ -80,6 +80,7 @@ class _StudentAnnouncementsScreenState
       body: StreamBuilder(
         stream: FirebaseFirestore.instance
             .collection("announcements")
+            .where('audience',whereIn:['all','students'])
             .orderBy("createdAt", descending: true)
             .snapshots(),
         builder: (context, snapshot) {
