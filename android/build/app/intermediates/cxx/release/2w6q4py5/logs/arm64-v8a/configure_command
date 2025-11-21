@@ -1,0 +1,19 @@
+/home/binoypr07/Android/cmake/3.22.1/bin/cmake \
+  -H/home/binoypr07/flutter/packages/flutter_tools/gradle/src/main/scripts \
+  -DCMAKE_SYSTEM_NAME=Android \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DCMAKE_SYSTEM_VERSION=24 \
+  -DANDROID_PLATFORM=android-24 \
+  -DANDROID_ABI=arm64-v8a \
+  -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a \
+  -DANDROID_NDK=/home/binoypr07/Android/ndk/27.0.12077973 \
+  -DCMAKE_ANDROID_NDK=/home/binoypr07/Android/ndk/27.0.12077973 \
+  -DCMAKE_TOOLCHAIN_FILE=/home/binoypr07/Android/ndk/27.0.12077973/build/cmake/android.toolchain.cmake \
+  -DCMAKE_MAKE_PROGRAM=/home/binoypr07/Android/cmake/3.22.1/bin/ninja \
+  -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/binoypr07/campusease/android/build/app/intermediates/cxx/release/2w6q4py5/obj/arm64-v8a \
+  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/binoypr07/campusease/android/build/app/intermediates/cxx/release/2w6q4py5/obj/arm64-v8a \
+  -B/home/binoypr07/campusease/android/build/.cxx/release/2w6q4py5/arm64-v8a \
+  -GNinja \
+  -Wno-dev \
+  --no-warn-unused-cli \
+  -DCMAKE_BUILD_TYPE=release
