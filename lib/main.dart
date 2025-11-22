@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/services/notification_service.dart';
 
 
@@ -24,7 +23,6 @@ import 'views/teacher/teacher_profile.dart';
 import 'views/teacher/approve_students.dart';
 import 'views/student/student_profile.dart';
 import 'views/student/student_attendence.dart';
-import 'views/student/qr.dart';
 import 'views/student/student_info.dart';
 import 'views/admin/admin_announcements.dart';
 import 'views/teacher/teacher_announcements.dart';
@@ -34,7 +32,7 @@ import 'views/student/student_announcements.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await NotificationService.init();
+  await NotificationService.initialize();
   runApp(const MyApp());
 }
 

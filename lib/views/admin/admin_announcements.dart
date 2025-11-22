@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get/get.dart';
 
 class AdminAnnouncementsScreen extends StatefulWidget {
   const AdminAnnouncementsScreen({super.key});
@@ -12,20 +13,20 @@ class AdminAnnouncementsScreen extends StatefulWidget {
 class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  final TextEditingController _titleC = TextEditingController();
-  final TextEditingController _messageC = TextEditingController();
+  TextEditingController title = TextEditingController();
+  TextEditingController message = TextEditingController();
 
-  String? selectedAudience;
+  String target = "All Students";
 
-  final List<String> audienceOptions = [
-    "all",
-    "students",
-    "teachers",
-    "department",
-    "class"
+  final List<String> targetOptions = [
+    "All Students",
+    "All Teachers",
+    "All Users",
+    "By Department"
   ];
 
-  // departments
+  String? selectedDept;
+
   final List<String> departments = [
     "Computer Science",
     "Physics",
@@ -41,255 +42,169 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
     "Botany"
   ];
 
-  // classes
-  final List<String> classList = [
-    "CS1","CS2","CS3",
-    "PHY1","PHY2","PHY3",
-    "CHE1","CHE2","CHE3",
-    "IC1","IC2","IC3",
-    "MAT1","MAT2","MAT3",
-    "ZOO1","ZOO2","ZOO3",
-    "BOO1","BOO2","BOO3",
-    "BCOM1","BCOM2","BCOM3",
-    "ECO1","ECO2","ECO3",
-    "HIN1","HIN2","HIN3",
-    "HIS1","HIS2","HIS3",
-    "ENG1","ENG2","ENG3",
-    "MAL1","MAL2","MAL3",
-  ];
+  bool loading = false;
 
-  String? selectedDepartment;
-  String? selectedClass;
-
-  bool posting = false;
-
-  Future<void> postAnnouncement() async {
-    if (_titleC.text.trim().isEmpty ||
-        _messageC.text.trim().isEmpty ||
-        selectedAudience == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please fill all fields"),
-        ),
-      );
+  Future<void> sendAnnouncement({String? docId}) async {
+    if (title.text.trim().isEmpty || message.text.trim().isEmpty) {
+      Get.snackbar("Missing Fields", "Please fill all fields",
+          backgroundColor: Colors.red, colorText: Colors.white);
       return;
     }
 
-    setState(() => posting = true);
+    setState(() => loading = true);
 
-    await _db.collection("announcements").add({
-      "title": _titleC.text.trim(),
-      "message": _messageC.text.trim(),
-      "audienceType": selectedAudience,
-      "department": selectedAudience == "department" ? selectedDepartment : null,
-      "class": selectedAudience == "class" ? selectedClass : null,
-      "createdAt": FieldValue.serverTimestamp(),
-    });
+    Map<String, dynamic> data = {
+      "title": title.text.trim(),
+      "message": message.text.trim(),
+      "timestamp": DateTime.now().millisecondsSinceEpoch,
+      "sender": "admin",
+      "target": target,
+      "department": selectedDept ?? "",
+    };
 
-    _titleC.clear();
-    _messageC.clear();
-    selectedAudience = null;
-    selectedClass = null;
-    selectedDepartment = null;
+    if (docId == null) {
+      await _db.collection("announcements").add(data);
+      Get.snackbar("Success", "Announcement Sent!",
+          backgroundColor: Colors.black, colorText: Colors.white);
+    } else {
+      await _db.collection("announcements").doc(docId).update(data);
+      Get.snackbar("Updated", "Announcement Updated!",
+          backgroundColor: Colors.black, colorText: Colors.white);
+    }
 
-    setState(() => posting = false);
+    setState(() => loading = false);
+    title.clear();
+    message.clear();
+    selectedDept = null;
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Announcement Posted!")),
-    );
+  void editAnnouncement(DocumentSnapshot doc) {
+    title.text = doc["title"];
+    message.text = doc["message"];
+    target = doc["target"];
+    selectedDept = doc["department"] == "" ? null : doc["department"];
+
+    sendAnnouncement(docId: doc.id);
+  }
+
+  Future<void> deleteAnnouncement(String id) async {
+    await _db.collection("announcements").doc(id).delete();
+    Get.snackbar("Deleted", "Announcement Removed!",
+        backgroundColor: Colors.black, colorText: Colors.white);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(title: const Text("Announcements")),
-      body: Column(
-        children: [
-          // ---------------------------------------------------
-          // CREATE ANNOUNCEMENT PANEL
-          // ---------------------------------------------------
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleC,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: "Title",
-                    labelStyle: TextStyle(color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                TextField(
-                  controller: _messageC,
-                  style: const TextStyle(color: Colors.white),
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: "Message",
-                    labelStyle: TextStyle(color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // AUDIENCE DROPDOWN
-                DropdownButtonFormField<String>(
-                  value: selectedAudience,
-                  dropdownColor: Colors.black,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: "Audience",
-                    labelStyle: TextStyle(color: Colors.white),
-                  ),
-                  items: audienceOptions
-                      .map((a) =>
-                          DropdownMenuItem(value: a, child: Text(a)))
-                      .toList(),
-                  onChanged: (v) {
-                    setState(() {
-                      selectedAudience = v;
-                      selectedDepartment = null;
-                      selectedClass = null;
-                    });
-                  },
-                ),
-
-                // IF department chosen → show dept dropdown
-                if (selectedAudience == "department")
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: DropdownButtonFormField<String>(
-                      value: selectedDepartment,
-                      dropdownColor: Colors.black,
-                      style: const TextStyle(color: Colors.white),
-                      items: departments
-                          .map((d) => DropdownMenuItem(
-                                value: d,
-                                child: Text(d),
-                              ))
-                          .toList(),
-                      decoration: const InputDecoration(
-                        labelText: "Select Department",
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                      onChanged: (v) => setState(() {
-                        selectedDepartment = v;
-                      }),
-                    ),
-                  ),
-
-                // IF class chosen → show class dropdown
-                if (selectedAudience == "class")
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: DropdownButtonFormField<String>(
-                      value: selectedClass,
-                      dropdownColor: Colors.black,
-                      style: const TextStyle(color: Colors.white),
-                      items: classList
-                          .map((c) =>
-                              DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      decoration: const InputDecoration(
-                        labelText: "Select Class",
-                        labelStyle: TextStyle(color: Colors.white),
-                      ),
-                      onChanged: (v) => setState(() {
-                        selectedClass = v;
-                      }),
-                    ),
-                  ),
-
-                const SizedBox(height: 18),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: posting ? null : postAnnouncement,
-                    child: posting
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("Post Announcement"),
-                  ),
-                )
-              ],
+      appBar: AppBar(title: const Text("Admin Announcements")),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              controller: title,
+              decoration: const InputDecoration(labelText: "Title"),
             ),
-          ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: message,
+              maxLines: 3,
+              decoration: const InputDecoration(labelText: "Message"),
+            ),
 
-          const Divider(color: Colors.white70),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              initialValue: target,
+              dropdownColor: Colors.black,
+              decoration: const InputDecoration(labelText: "Send To"),
+              items: targetOptions
+                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                  .toList(),
+              onChanged: (v) => setState(() => target = v!),
+            ),
 
-          // ---------------------------------------------------
-          // ALL ANNOUNCEMENTS LIST
-          // ---------------------------------------------------
-          Expanded(
-            child: StreamBuilder(
-              stream: _db
-                  .collection("announcements")
-                  .orderBy("createdAt", descending: true)
-                  .snapshots(),
-              builder: (context, s) {
-                if (!s.hasData) {
-                  return const Center(
-                      child: CircularProgressIndicator(color: Colors.white));
-                }
+            if (target == "By Department")
+              DropdownButtonFormField<String>(
+                initialValue: selectedDept,
+                dropdownColor: Colors.black,
+                decoration: const InputDecoration(labelText: "Department"),
+                items: departments
+                    .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                    .toList(),
+                onChanged: (v) => setState(() => selectedDept = v),
+              ),
 
-                var docs = s.data!.docs;
+            const SizedBox(height: 14),
 
-                if (docs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      "No announcements yet",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+            ElevatedButton(
+              onPressed: loading ? null : () => sendAnnouncement(),
+              child: loading
+                  ? const CircularProgressIndicator(color: Colors.black)
+                  : const Text("Send Announcement"),
+            ),
+
+            const SizedBox(height: 20),
+
+            const Divider(color: Colors.white),
+
+            const Text("Previous Announcements",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+            const SizedBox(height: 10),
+
+            Expanded(
+              child: StreamBuilder(
+                stream: _db
+                    .collection("announcements")
+                    .orderBy("timestamp", descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                        child: CircularProgressIndicator(color: Colors.white));
+                  }
+
+                  var docs = snapshot.data!.docs;
+
+                  if (docs.isEmpty) {
+                    return const Center(
+                        child: Text("No announcements yet",
+                            style: TextStyle(color: Colors.white70)));
+                  }
+
+                  return ListView.builder(
+                    itemCount: docs.length,
+                    itemBuilder: (context, index) {
+                      var doc = docs[index];
+
+                      return Card(
+                        child: ListTile(
+                          title: Text(doc["title"],
+                              style: const TextStyle(color: Colors.white)),
+                          subtitle: Text(doc["message"],
+                              style: const TextStyle(color: Colors.white70)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                  icon: const Icon(Icons.edit,
+                                      color: Colors.white),
+                                  onPressed: () => editAnnouncement(doc)),
+                              IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.redAccent),
+                                  onPressed: () =>
+                                      deleteAnnouncement(doc.id)),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    var a = docs[index].data();
-
-                    return Card(
-                      color: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(
-                            color: Colors.white70, width: 1.2),
-                      ),
-                      child: ListTile(
-                        title: Text(
-                          a["title"] ?? "",
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              a["message"] ?? "",
-                              style: const TextStyle(
-                                  color: Colors.white70, fontSize: 14),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              "Audience: ${a["audienceType"]}",
-                              style: const TextStyle(
-                                  color: Colors.white60, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+                },
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

@@ -158,7 +158,7 @@ class _RegisterStudentState extends State<RegisterStudent> {
             // ------------------- DEPARTMENT -------------------
             const Text("Department", style: TextStyle(color: Colors.white70)),
             DropdownButtonFormField<String>(
-              value: selectedDept,
+              initialValue: selectedDept,
               dropdownColor: Colors.black,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(),
@@ -180,7 +180,7 @@ class _RegisterStudentState extends State<RegisterStudent> {
             // ------------------- CLASS -------------------
             const Text("Select Class", style: TextStyle(color: Colors.white70)),
             DropdownButtonFormField<String>(
-              value: selectedClass,
+              initialValue: selectedClass,
               dropdownColor: Colors.black,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(),

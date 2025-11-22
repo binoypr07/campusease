@@ -125,7 +125,7 @@ class PendingUsersScreen extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () async {
                             await FirebaseAuthService()
-                                .approveUser(user.id, user.data() as Map<String, dynamic>);
+                                .approveUser(user.id, user.data());
 
                             Get.snackbar(
                               "Success",

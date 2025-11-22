@@ -98,7 +98,7 @@ class _RegisterTeacherState extends State<RegisterTeacher> {
             // ---------- DEPARTMENT ----------
             const Text("Department", style: TextStyle(color: Colors.white70)),
             DropdownButtonFormField<String>(
-              value: selectedDept,
+              initialValue: selectedDept,
               dropdownColor: Colors.black,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(),

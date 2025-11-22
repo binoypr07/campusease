@@ -136,8 +136,9 @@ class _EditableTimetablePageState extends State<EditableTimetablePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading)
+    if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(

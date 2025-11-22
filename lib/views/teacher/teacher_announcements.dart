@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
 
 class TeacherAnnouncementsScreen extends StatefulWidget {
   const TeacherAnnouncementsScreen({super.key});
@@ -15,9 +16,13 @@ class _TeacherAnnouncementsScreenState
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final String uid = FirebaseAuth.instance.currentUser!.uid;
 
-  String? teacherDepartment;
+  TextEditingController title = TextEditingController();
+  TextEditingController message = TextEditingController();
+
+  String? teacherDept;
   String? assignedClass;
-  bool loading = true;
+
+  bool loading = false;
 
   @override
   void initState() {
@@ -27,91 +32,151 @@ class _TeacherAnnouncementsScreenState
 
   Future<void> loadTeacherInfo() async {
     var doc = await _db.collection("users").doc(uid).get();
-    if (doc.exists) {
-      var data = doc.data()!;
-      teacherDepartment = data["department"];
-      assignedClass = data["assignedClass"];
+    teacherDept = doc["department"];
+    assignedClass = doc["assignedClass"];
+    setState(() {});
+  }
+
+  Future<void> sendAnnouncement({String? docId}) async {
+    if (title.text.trim().isEmpty || message.text.trim().isEmpty) {
+      Get.snackbar("Missing Fields", "Please fill all fields",
+          backgroundColor: Colors.red, colorText: Colors.white);
+      return;
     }
+
+    setState(() => loading = true);
+
+    Map<String, dynamic> data = {
+      "title": title.text.trim(),
+      "message": message.text.trim(),
+      "timestamp": DateTime.now().millisecondsSinceEpoch,
+      "sender": uid,
+      "senderType": "teacher",
+      "department": teacherDept,
+      "class": assignedClass,
+    };
+
+    if (docId == null) {
+      await _db.collection("announcements").add(data);
+      Get.snackbar("Success", "Announcement Sent!",
+          backgroundColor: Colors.black, colorText: Colors.white);
+    } else {
+      await _db.collection("announcements").doc(docId).update(data);
+      Get.snackbar("Updated", "Announcement Updated!",
+          backgroundColor: Colors.black, colorText: Colors.white);
+    }
+
     setState(() => loading = false);
+    title.clear();
+    message.clear();
+  }
+
+  Future<void> deleteAnnouncement(String id) async {
+    await _db.collection("announcements").doc(id).delete();
+    Get.snackbar("Deleted", "Announcement Removed!",
+        backgroundColor: Colors.black, colorText: Colors.white);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
+    if (teacherDept == null) {
       return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(title: const Text("Announcements")),
-      body: StreamBuilder(
-        stream: _db
-            .collection("announcements")
-            .orderBy("createdAt", descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(
-                child: CircularProgressIndicator(color: Colors.white));
-          }
+      appBar: AppBar(title: const Text("Teacher Announcements")),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              controller: title,
+              decoration: const InputDecoration(labelText: "Title"),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: message,
+              maxLines: 3,
+              decoration: const InputDecoration(labelText: "Message"),
+            ),
 
-          var allDocs = snapshot.data!.docs;
+            const SizedBox(height: 14),
 
-          // ------------------------
-          // FILTER LOGIC FOR TEACHERS
-          // ------------------------
-          var filtered = allDocs.where((doc) {
-            var a = doc.data();
-            String audience = a["audienceType"] ?? "all";
+            ElevatedButton(
+              onPressed: loading ? null : () => sendAnnouncement(),
+              child: loading
+                  ? const CircularProgressIndicator(color: Colors.black)
+                  : const Text("Send Announcement"),
+            ),
 
-            return audience == "all" ||
-                audience == "teachers" ||
-                audience == teacherDepartment ||
-                audience == assignedClass;
-          }).toList();
+            const SizedBox(height: 20),
 
-          if (filtered.isEmpty) {
-            return const Center(
-              child: Text(
-                "No announcements for you",
-                style: TextStyle(color: Colors.white, fontSize: 18),
+            const Divider(color: Colors.white),
+
+            const Text("My Previous Announcements",
+                style: TextStyle(fontSize: 18, color: Colors.white)),
+
+            const SizedBox(height: 10),
+
+            Expanded(
+              child: StreamBuilder(
+                stream: _db
+                    .collection("announcements")
+                    .where("sender", isEqualTo: uid)
+                    .orderBy("timestamp", descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                        child: CircularProgressIndicator(color: Colors.white));
+                  }
+
+                  var docs = snapshot.data!.docs;
+
+                  if (docs.isEmpty) {
+                    return const Center(
+                        child: Text("No announcements yet",
+                            style: TextStyle(color: Colors.white70)));
+                  }
+
+                  return ListView.builder(
+                    itemCount: docs.length,
+                    itemBuilder: (context, index) {
+                      var doc = docs[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(doc["title"],
+                              style: const TextStyle(color: Colors.white)),
+                          subtitle: Text(doc["message"],
+                              style: const TextStyle(color: Colors.white70)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit,
+                                    color: Colors.white),
+                                onPressed: () =>
+                                    sendAnnouncement(docId: doc.id),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.redAccent),
+                                onPressed: () =>
+                                    deleteAnnouncement(doc.id),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              var a = filtered[index].data();
-
-              return Card(
-                color: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side:
-                      const BorderSide(color: Colors.white70, width: 1.2),
-                ),
-                child: ListTile(
-                  title: Text(
-                    a["title"] ?? "",
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    a["message"] ?? "",
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                ),
-              );
-            },
-          );
-        },
+            )
+          ],
+        ),
       ),
     );
   }

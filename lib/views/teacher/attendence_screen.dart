@@ -191,8 +191,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               primary: Colors.white,
               onSurface: Colors.white,
               surface: Colors.black,
-            ),
-            dialogBackgroundColor: Colors.black,
+            ), dialogTheme: DialogThemeData(backgroundColor: Colors.black),
           ),
           child: child!,
         );

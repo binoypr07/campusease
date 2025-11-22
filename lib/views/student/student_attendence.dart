@@ -108,7 +108,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
         // Month
         Expanded(
           child: DropdownButtonFormField<int>(
-            value: selectedMonth,
+            initialValue: selectedMonth,
             decoration: const InputDecoration(labelText: "Month"),
             dropdownColor: Colors.black,
             style: const TextStyle(color: Colors.white),
@@ -131,7 +131,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
         // Year
         Expanded(
           child: DropdownButtonFormField<int>(
-            value: selectedYear,
+            initialValue: selectedYear,
             decoration: const InputDecoration(labelText: "Year"),
             dropdownColor: Colors.black,
             style: const TextStyle(color: Colors.white),
