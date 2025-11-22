@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'editable_timetable_page.dart';
 import 'teacher_feedback_page.dart';
-import 'teacherpollpage.dart';
+import 'teacherPollPage.dart';
 import 'teacher_poll_results.dart';
 
 class TeacherDashboard extends StatefulWidget {
