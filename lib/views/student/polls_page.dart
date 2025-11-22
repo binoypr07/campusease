@@ -17,6 +17,7 @@ class PollsPage extends StatefulWidget {
 
 class _PollsPageState extends State<PollsPage> {
   Map<String, String> selectedOptions = {};
+  Map<String, bool> hasVoted = {};
   bool submitting = false;
 
   Future<void> submitVote(String pollId) async {
@@ -32,7 +33,10 @@ class _PollsPageState extends State<PollsPage> {
         .doc(widget.studentId)
         .set({"option": selected, "timestamp": FieldValue.serverTimestamp()});
 
-    setState(() => submitting = false);
+    setState(() {
+      submitting = false;
+      hasVoted[pollId] = true; // mark as voted
+    });
 
     ScaffoldMessenger.of(
       context,
@@ -80,6 +84,8 @@ class _PollsPageState extends State<PollsPage> {
               final question = poll["question"];
               final options = List<String>.from(poll["options"]);
 
+              final voted = hasVoted[pollId] ?? false;
+
               return Card(
                 margin: const EdgeInsets.all(12),
                 child: Padding(
@@ -98,26 +104,33 @@ class _PollsPageState extends State<PollsPage> {
 
                       /// OPTIONS
                       ...options.map(
-                        (opt) => RadioListTile(
+                        (opt) => RadioListTile<String>(
                           title: Text(opt),
                           value: opt,
                           groupValue: selectedOptions[pollId],
-                          onChanged: (v) {
-                            setState(() {
-                              selectedOptions[pollId] = v!;
-                            });
-                          },
+                          onChanged: voted
+                              ? null // disable after voting
+                              : (val) {
+                                  setState(() {
+                                    selectedOptions[pollId] = val!;
+                                  });
+                                },
                         ),
                       ),
 
                       /// SUBMIT BUTTON
                       ElevatedButton(
-                        onPressed: submitting ? null : () => submitVote(pollId),
+                        onPressed:
+                            submitting ||
+                                voted ||
+                                selectedOptions[pollId] == null
+                            ? null
+                            : () => submitVote(pollId),
                         child: submitting
                             ? const CircularProgressIndicator(
                                 color: Colors.white,
                               )
-                            : const Text("Submit Vote"),
+                            : Text(voted ? "Already Voted" : "Submit Vote"),
                       ),
                     ],
                   ),
