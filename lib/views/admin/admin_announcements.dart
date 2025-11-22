@@ -1,243 +1,227 @@
-import 'package:flutter/material.dart';
+// lib/views/announcements/admin_announcements.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class AdminAnnouncementScreen extends StatefulWidget {
-  const AdminAnnouncementScreen({super.key});
+class AdminAnnouncementsScreen extends StatefulWidget {
+  const AdminAnnouncementsScreen({super.key});
 
   @override
-  State<AdminAnnouncementScreen> createState() =>
-      _AdminAnnouncementScreenState();
+  State<AdminAnnouncementsScreen> createState() =>
+      _AdminAnnouncementsScreenState();
 }
 
-class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
-  TextEditingController titleC = TextEditingController();
-  TextEditingController messageC = TextEditingController();
+class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final uid = FirebaseAuth.instance.currentUser!.uid;
 
-  String targetRole = "all";
-  String? selectedClass;
-  String? selectedDept;
+  // show create/edit dialog
+  Future<void> _openEditor({DocumentSnapshot? doc}) async {
+    TextEditingController titleC =
+        TextEditingController(text: doc != null ? doc['title'] ?? '' : '');
+    TextEditingController bodyC =
+        TextEditingController(text: doc != null ? doc['body'] ?? '' : '');
+    String targetType = doc != null
+        ? (doc['target']?['type'] ?? 'all')
+        : 'all'; // 'all' | 'department' | 'class'
+    String targetValue = doc != null ? (doc['target']?['value'] ?? '') : '';
 
-  final List<String> departments = [
-    "Computer Science",
-    "Physics",
-    "Chemistry",
-    "Maths",
-    "Malayalam",
-    "Hindi",
-    "English",
-    "History",
-    "Economics",
-    "Commerce",
-    "Zoology",
-    "Botany"
-  ];
-
-  final List<String> classList = [
-    "CS1", "CS2", "CS3",
-    "PHY1", "PHY2", "PHY3",
-    "CHE1", "CHE2", "CHE3",
-    "ENG1", "ENG2", "ENG3",
-    "MAT1", "MAT2", "MAT3",
-    "ZOO1", "ZOO2", "ZOO3",
-    "BOO1", "BOO2", "BOO3",
-  ];
-
-  Future<void> _createAnnouncement({String? editId}) async {
-    if (titleC.text.isEmpty || messageC.text.isEmpty) {
-      Get.snackbar("Error", "Please fill all fields",
-          backgroundColor: Colors.red, colorText: Colors.white);
-      return;
-    }
-
-    final data = {
-      "title": titleC.text.trim(),
-      "message": messageC.text.trim(),
-      "roleTarget": targetRole,
-      "classTarget": selectedClass ?? "",
-      "departmentTarget": selectedDept ?? "",
-      "timestamp": Timestamp.now(),
-      "creatorRole": "admin",
-    };
-
-    if (editId == null) {
-      await FirebaseFirestore.instance.collection("announcements").add(data);
-      Get.snackbar("Success", "Announcement Created!",
-          backgroundColor: Colors.green, colorText: Colors.black);
-    } else {
-      await FirebaseFirestore.instance
-          .collection("announcements")
-          .doc(editId)
-          .update(data);
-
-      Get.snackbar("Success", "Announcement Updated!",
-          backgroundColor: Colors.green, colorText: Colors.black);
-    }
-
-    titleC.clear();
-    messageC.clear();
-    setState(() {
-      targetRole = "all";
-      selectedClass = null;
-      selectedDept = null;
-    });
-  }
-
-  void _editDialog(DocumentSnapshot doc) {
-    titleC.text = doc["title"];
-    messageC.text = doc["message"];
-    targetRole = doc["roleTarget"];
-    selectedClass = doc["classTarget"];
-    selectedDept = doc["departmentTarget"];
-
-    showModalBottomSheet(
+    await showDialog(
       context: context,
-      backgroundColor: Colors.black,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(18),
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.black,
+        title: Text(doc == null ? "Create Announcement" : "Edit Announcement",
+            style: const TextStyle(color: Colors.white)),
+        content: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              _formUI(onSubmit: () => _createAnnouncement(editId: doc.id))
+              TextField(
+                controller: titleC,
+                decoration: const InputDecoration(labelText: "Title"),
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: bodyC,
+                maxLines: 5,
+                decoration: const InputDecoration(labelText: "Message"),
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: targetType,
+                dropdownColor: Colors.black,
+                decoration: const InputDecoration(labelText: "Target"),
+                items: const [
+                  DropdownMenuItem(value: 'all', child: Text('All')),
+                  DropdownMenuItem(value: 'department', child: Text('Department')),
+                  DropdownMenuItem(value: 'class', child: Text('Class')),
+                ],
+                onChanged: (v) {
+                  if (v == null) return;
+                  setState(() {
+                    targetType = v;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              if (targetType != 'all')
+                TextField(
+                  onChanged: (v) => targetValue = v,
+                  controller: TextEditingController(text: targetValue),
+                  decoration: InputDecoration(
+                    labelText:
+                        targetType == 'department' ? "Department name" : "Class (eg: CS1)",
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
             ],
           ),
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              String title = titleC.text.trim();
+              String body = bodyC.text.trim();
+
+              if (title.isEmpty || body.isEmpty) {
+                Get.snackbar("Error", "Title and message required",
+                    backgroundColor: Colors.red.withOpacity(0.7),
+                    colorText: Colors.white);
+                return;
+              }
+
+              Map<String, dynamic> payload = {
+                'title': title,
+                'body': body,
+                'createdByUid': uid,
+                'createdAt': FieldValue.serverTimestamp(),
+                'target': {
+                  'type': targetType,
+                  'value': targetType == 'all' ? '' : (targetValue.trim())
+                }
+              };
+
+              try {
+                if (doc == null) {
+                  var ref = await _db.collection('announcements').add(payload);
+
+                  // Add a pushQueue doc so a Cloud Function (or server) can send FCM.
+                  await _db.collection('pushQueue').add({
+                    'announcementId': ref.id,
+                    'target': payload['target'],
+                    'createdAt': FieldValue.serverTimestamp(),
+                    // optional: add 'sent': false field for function to update
+                  });
+                } else {
+                  await _db.collection('announcements').doc(doc.id).update({
+                    'title': title,
+                    'body': body,
+                    'target': payload['target'],
+                    'editedAt': FieldValue.serverTimestamp(),
+                  });
+
+                  await _db.collection('pushQueue').add({
+                    'announcementId': doc.id,
+                    'target': payload['target'],
+                    'createdAt': FieldValue.serverTimestamp(),
+                  });
+                }
+
+                Get.back();
+                Get.snackbar("Success", "Announcement saved",
+                    backgroundColor: Colors.black, colorText: Colors.white);
+              } catch (e) {
+                Get.snackbar("Error", "Failed: $e",
+                    backgroundColor: Colors.red.withOpacity(0.7),
+                    colorText: Colors.white);
+              }
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _formUI({required VoidCallback onSubmit}) {
-    return Column(
-      children: [
-        TextField(
-          controller: titleC,
-          decoration: const InputDecoration(labelText: "Title"),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: messageC,
-          maxLines: 3,
-          decoration: const InputDecoration(labelText: "Message"),
-        ),
-        const SizedBox(height: 20),
-
-        // ROLE SELECTION
-        DropdownButtonFormField<String>(
-          value: targetRole,
-          dropdownColor: Colors.black,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(labelText: "Send To"),
-          items: const [
-            DropdownMenuItem(value: "all", child: Text("All Users")),
-            DropdownMenuItem(value: "teachers", child: Text("Teachers Only")),
-            DropdownMenuItem(value: "students", child: Text("Students Only")),
-            DropdownMenuItem(
-                value: "specificClass", child: Text("Specific Class")),
-            DropdownMenuItem(
-                value: "specificDepartment", child: Text("Specific Department")),
-          ],
-          onChanged: (v) {
-            setState(() => targetRole = v!);
-          },
-        ),
-
-        const SizedBox(height: 12),
-
-        if (targetRole == "specificClass")
-          DropdownButtonFormField<String>(
-            value: selectedClass,
-            dropdownColor: Colors.black,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(labelText: "Choose Class"),
-            items: classList
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                .toList(),
-            onChanged: (v) => setState(() => selectedClass = v),
-          ),
-
-        if (targetRole == "specificDepartment")
-          DropdownButtonFormField<String>(
-            value: selectedDept,
-            dropdownColor: Colors.black,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(labelText: "Choose Department"),
-            items: departments
-                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                .toList(),
-            onChanged: (v) => setState(() => selectedDept = v),
-          ),
-
-        const SizedBox(height: 20),
-        ElevatedButton(onPressed: onSubmit, child: const Text("Save"))
-      ],
-    );
+  Future<void> _deleteAnnouncement(String id) async {
+    try {
+      await _db.collection('announcements').doc(id).delete();
+      Get.snackbar("Deleted", "Announcement removed",
+          backgroundColor: Colors.black, colorText: Colors.white);
+    } catch (e) {
+      Get.snackbar("Error", "Delete failed: $e",
+          backgroundColor: Colors.red.withOpacity(0.7), colorText: Colors.white);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Admin Announcements")),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () {
-          titleC.clear();
-          messageC.clear();
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.black,
-            builder: (_) {
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: _formUI(onSubmit: () => _createAnnouncement()),
-              );
-            },
-          );
-        },
+      appBar: AppBar(
+        title: const Text("Announcements"),
+        centerTitle: true,
       ),
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance
-            .collection("announcements")
-            .orderBy("timestamp", descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(
-                child: CircularProgressIndicator(color: Colors.white));
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _db.collection('announcements').orderBy('createdAt', descending: true).snapshots(),
+        builder: (context, snap) {
+          if (snap.hasError) {
+            return Center(child: Text("Error: ${snap.error}", style: const TextStyle(color: Colors.white)));
+          }
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
           }
 
-          var docs = snapshot.data!.docs;
+          var docs = snap.data!.docs;
+
+          if (docs.isEmpty) {
+            return const Center(
+              child: Text("No announcements yet", style: TextStyle(color: Colors.white)),
+            );
+          }
 
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: docs.length,
-            itemBuilder: (_, i) {
-              var a = docs[i];
+            itemBuilder: (context, idx) {
+              var d = docs[idx];
+              var t = d['title'] ?? '';
+              var b = d['body'] ?? '';
+              var target = (d['target'] ?? {}) as Map<String, dynamic>;
+              String targetText = target['type'] == 'all'
+                  ? 'All'
+                  : '${target['type']}:${target['value']}';
 
               return Card(
+                margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
-                  title: Text(a["title"],
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18)),
-                  subtitle: Text(a["message"],
-                      style: const TextStyle(color: Colors.white70)),
-                  trailing: PopupMenuButton(
-                    color: Colors.black,
-                    onSelected: (value) {
-                      if (value == "edit") {
-                        _editDialog(a);
-                      } else if (value == "delete") {
-                        FirebaseFirestore.instance
-                            .collection("announcements")
-                            .doc(a.id)
-                            .delete();
-                      }
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: "edit", child: Text("Edit")),
-                      PopupMenuItem(value: "delete", child: Text("Delete")),
+                  title: Text(t, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 6),
+                      Text(b, style: const TextStyle(color: Colors.white70)),
+                      const SizedBox(height: 6),
+                      Text("Target: $targetText", style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                    ],
+                  ),
+                  isThreeLine: true,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        onPressed: () => _openEditor(doc: d),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.white),
+                        onPressed: () => _deleteAnnouncement(d.id),
+                      ),
                     ],
                   ),
                 ),
@@ -245,6 +229,10 @@ class _AdminAnnouncementScreenState extends State<AdminAnnouncementScreen> {
             },
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openEditor(),
+        child: const Icon(Icons.add),
       ),
     );
   }
