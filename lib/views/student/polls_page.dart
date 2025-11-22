@@ -20,6 +20,37 @@ class _PollsPageState extends State<PollsPage> {
   Map<String, bool> hasVoted = {};
   bool submitting = false;
 
+  @override
+  void initState() {
+    super.initState();
+    fetchVotedStatus();
+  }
+
+  /// Check Firestore if student already voted for each poll
+  Future<void> fetchVotedStatus() async {
+    final pollSnapshot = await FirebaseFirestore.instance
+        .collection('polls')
+        .where('classYear', isEqualTo: widget.classYear)
+        .get();
+
+    Map<String, bool> votedMap = {};
+
+    for (var poll in pollSnapshot.docs) {
+      final voteDoc = await FirebaseFirestore.instance
+          .collection('polls')
+          .doc(poll.id)
+          .collection('votes')
+          .doc(widget.studentId)
+          .get();
+
+      votedMap[poll.id] = voteDoc.exists;
+    }
+
+    setState(() {
+      hasVoted = votedMap;
+    });
+  }
+
   Future<void> submitVote(String pollId) async {
     final selected = selectedOptions[pollId];
     if (selected == null) return;
@@ -35,7 +66,7 @@ class _PollsPageState extends State<PollsPage> {
 
     setState(() {
       submitting = false;
-      hasVoted[pollId] = true; // mark as voted
+      hasVoted[pollId] = true; // mark as voted permanently
     });
 
     ScaffoldMessenger.of(

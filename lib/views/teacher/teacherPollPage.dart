@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:get/get.dart';
 
 class TeacherPollPage extends StatefulWidget {
   const TeacherPollPage({super.key});
@@ -11,22 +10,42 @@ class TeacherPollPage extends StatefulWidget {
 
 class _TeacherPollPageState extends State<TeacherPollPage> {
   final questionController = TextEditingController();
-  final List<TextEditingController> optionControllers = [
-    TextEditingController(),
-    TextEditingController(),
-  ];
+  final List<TextEditingController> optionControllers = [];
 
   DateTime? startTime;
   DateTime? endTime;
   String? selectedClass;
+
+  @override
+  void initState() {
+    super.initState();
+    optionControllers.add(TextEditingController()); // start with 1 option
+  }
+
+  void addOption() {
+    setState(() {
+      optionControllers.add(TextEditingController());
+    });
+  }
+
+  void removeOption(int index) {
+    setState(() {
+      optionControllers[index].dispose();
+      optionControllers.removeAt(index);
+    });
+  }
 
   void createPoll() async {
     if (questionController.text.isEmpty ||
         optionControllers.any((c) => c.text.isEmpty) ||
         startTime == null ||
         endTime == null ||
-        selectedClass == null)
+        selectedClass == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
       return;
+    }
 
     await FirebaseFirestore.instance.collection('polls').add({
       'question': questionController.text,
@@ -40,8 +59,12 @@ class _TeacherPollPageState extends State<TeacherPollPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text("Poll created")));
+
+    // Clear all
     questionController.clear();
-    optionControllers.forEach((c) => c.clear());
+    for (var c in optionControllers) {
+      c.clear();
+    }
     setState(() {
       startTime = null;
       endTime = null;
@@ -89,6 +112,7 @@ class _TeacherPollPageState extends State<TeacherPollPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            // Question
             TextField(
               controller: questionController,
               decoration: const InputDecoration(
@@ -97,19 +121,54 @@ class _TeacherPollPageState extends State<TeacherPollPage> {
               ),
             ),
             const SizedBox(height: 10),
-            ...optionControllers.map(
-              (c) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: TextField(
-                  controller: c,
-                  decoration: const InputDecoration(
-                    labelText: "Option",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
+
+            // Options
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: optionControllers.length,
+              itemBuilder: (context, index) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: TextField(
+                          controller: optionControllers[index],
+                          decoration: InputDecoration(
+                            labelText: "Option ${index + 1}",
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (optionControllers.length > 1)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.remove_circle,
+                          color: Colors.red,
+                        ),
+                        onPressed: () => removeOption(index),
+                      ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 10),
+
+            // Add new option
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ElevatedButton.icon(
+                onPressed: addOption,
+                icon: const Icon(Icons.add),
+                label: const Text("Add Option"),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Class selector
             DropdownButtonFormField<String>(
               value: selectedClass,
               decoration: const InputDecoration(
@@ -125,6 +184,8 @@ class _TeacherPollPageState extends State<TeacherPollPage> {
               onChanged: (val) => setState(() => selectedClass = val),
             ),
             const SizedBox(height: 10),
+
+            // Start & End Time
             Row(
               children: [
                 Expanded(
@@ -151,6 +212,8 @@ class _TeacherPollPageState extends State<TeacherPollPage> {
               ],
             ),
             const SizedBox(height: 20),
+
+            // Create Poll Button
             ElevatedButton(
               onPressed: createPoll,
               child: const Text("Create Poll"),
