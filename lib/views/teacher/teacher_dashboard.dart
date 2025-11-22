@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'editable_timetable_page.dart';
 import 'teacher_feedback_page.dart';
+import 'teacherpollpage.dart';
+import 'teacher_poll_results.dart';
 
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
@@ -166,6 +168,54 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 subtitle: "Select your class",
                 onTap: () => Get.toNamed('/assignClass'),
               ),
+            // ------------------ CREATE POLL ------------------
+            buildCard(
+              icon: Icons.add_chart,
+              title: "Create Poll",
+              subtitle: "Create new poll for your class",
+              onTap: () {
+                if (assignedClass == null || assignedClass!.isEmpty) {
+                  Get.snackbar(
+                    "Class Not Assigned",
+                    "Please assign a class first!",
+                    backgroundColor: Colors.black,
+                    colorText: Colors.white,
+                  );
+                  return;
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TeacherPollPage(), // teacher creates poll
+                  ),
+                );
+              },
+            ),
+
+            // ------------------ VIEW POLL RESULTS ------------------
+            buildCard(
+              icon: Icons.bar_chart,
+              title: "Poll Results",
+              subtitle: "View results of ended polls",
+              onTap: () {
+                if (assignedClass == null || assignedClass!.isEmpty) {
+                  Get.snackbar(
+                    "Class Not Assigned",
+                    "Please assign a class first!",
+                    backgroundColor: Colors.black,
+                    colorText: Colors.white,
+                  );
+                  return;
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        TeacherPollResultsPage(className: assignedClass!),
+                  ),
+                );
+              },
+            ),
             // ------------------ FEEDBACK ------------------
             buildCard(
               icon: Icons.feedback,

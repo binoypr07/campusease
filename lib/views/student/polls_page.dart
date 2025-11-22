@@ -16,28 +16,27 @@ class PollsPage extends StatefulWidget {
 }
 
 class _PollsPageState extends State<PollsPage> {
-  String? selectedOption;
+  Map<String, String> selectedOptions = {};
   bool submitting = false;
 
-  void submitVote(String pollId) async {
-    if (selectedOption == null) return;
+  Future<void> submitVote(String pollId) async {
+    final selected = selectedOptions[pollId];
+    if (selected == null) return;
 
     setState(() => submitting = true);
 
     await FirebaseFirestore.instance
-        .collection('polls')
+        .collection("polls")
         .doc(pollId)
-        .collection('votes')
+        .collection("votes")
         .doc(widget.studentId)
-        .set({
-          'option': selectedOption,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
+        .set({"option": selected, "timestamp": FieldValue.serverTimestamp()});
 
     setState(() => submitting = false);
+
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Vote submitted')));
+    ).showSnackBar(const SnackBar(content: Text("Vote submitted!")));
   }
 
   @override
@@ -46,25 +45,40 @@ class _PollsPageState extends State<PollsPage> {
       appBar: AppBar(title: const Text("Polls")),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('polls')
-            .where('classYear', isEqualTo: widget.classYear)
+            .collection("polls")
+            .where("classYear", isEqualTo: widget.classYear)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
-          final polls = snapshot.data!.docs;
+          final now = Timestamp.now();
+          final allPolls = snapshot.data!.docs;
 
-          if (polls.isEmpty)
-            return const Center(child: Text('No polls available'));
+          /// FILTER POLLS BASED ON TIME
+          final activePolls = allPolls.where((poll) {
+            final start = poll["startTime"] as Timestamp;
+            final end = poll["endTime"] as Timestamp;
+            return start.compareTo(now) <= 0 && end.compareTo(now) >= 0;
+          }).toList();
+
+          if (activePolls.isEmpty) {
+            return const Center(
+              child: Text(
+                "No active polls right now",
+                style: TextStyle(fontSize: 16),
+              ),
+            );
+          }
 
           return ListView.builder(
-            itemCount: polls.length,
+            itemCount: activePolls.length,
             itemBuilder: (context, index) {
-              final poll = polls[index];
+              final poll = activePolls[index];
               final pollId = poll.id;
-              final question = poll['question'];
-              final options = List<String>.from(poll['options']);
+              final question = poll["question"];
+              final options = List<String>.from(poll["options"]);
 
               return Card(
                 margin: const EdgeInsets.all(12),
@@ -76,27 +90,34 @@ class _PollsPageState extends State<PollsPage> {
                       Text(
                         question,
                         style: const TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
                         ),
                       ),
                       const SizedBox(height: 10),
+
+                      /// OPTIONS
                       ...options.map(
-                        (opt) => RadioListTile<String>(
+                        (opt) => RadioListTile(
                           title: Text(opt),
                           value: opt,
-                          groupValue: selectedOption,
-                          onChanged: (val) =>
-                              setState(() => selectedOption = val),
+                          groupValue: selectedOptions[pollId],
+                          onChanged: (v) {
+                            setState(() {
+                              selectedOptions[pollId] = v!;
+                            });
+                          },
                         ),
                       ),
+
+                      /// SUBMIT BUTTON
                       ElevatedButton(
                         onPressed: submitting ? null : () => submitVote(pollId),
                         child: submitting
                             ? const CircularProgressIndicator(
                                 color: Colors.white,
                               )
-                            : const Text("Vote"),
+                            : const Text("Submit Vote"),
                       ),
                     ],
                   ),
