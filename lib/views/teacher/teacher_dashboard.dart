@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'editable_timetable_page.dart';
+import 'teacher_feedback_page.dart';
 
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
@@ -165,7 +166,30 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 subtitle: "Select your class",
                 onTap: () => Get.toNamed('/assignClass'),
               ),
-
+            // ------------------ FEEDBACK ------------------
+            buildCard(
+              icon: Icons.feedback,
+              title: "Student Feedback",
+              subtitle: "View submitted feedback",
+              onTap: () {
+                if (assignedClass == null || assignedClass!.isEmpty) {
+                  Get.snackbar(
+                    "Class Not Assigned",
+                    "Please assign a class first!",
+                    backgroundColor: Colors.black,
+                    colorText: Colors.white,
+                  );
+                  return;
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        TeacherFeedbackPage(className: assignedClass!),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 20),
 
             // LOGOUT

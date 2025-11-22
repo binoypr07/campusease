@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'qr.dart';
 import 'timetable_page.dart';
+import 'feedback_page.dart';
+import 'polls_page.dart';
 
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
@@ -177,6 +179,36 @@ class StudentDashboard extends StatelessWidget {
                         department: studentDepartment,
                         classYear: studentClass,
                         semester: studentSemester,
+                      ),
+                    );
+                  },
+                ),
+                // ------------------ FEEDBACK ------------------
+                buildCard(
+                  icon: Icons.feedback,
+                  title: "Feedback",
+                  subtitle: "Send feedback to teachers/admin",
+                  onTap: () {
+                    Get.to(
+                      () => FeedbackPage(
+                        studentId: studentId,
+                        studentName: studentName,
+                        classYear: studentClass,
+                      ),
+                    );
+                  },
+                ),
+
+                // ------------------ POLL ------------------
+                buildCard(
+                  icon: Icons.poll,
+                  title: "Polls",
+                  subtitle: "Participate in active polls",
+                  onTap: () {
+                    Get.to(
+                      () => PollsPage(
+                        studentId: studentId,
+                        classYear: studentClass,
                       ),
                     );
                   },
