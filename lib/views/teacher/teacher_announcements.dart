@@ -3,180 +3,149 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 
-class TeacherAnnouncementsScreen extends StatefulWidget {
-  const TeacherAnnouncementsScreen({super.key});
+class TeacherAnnouncementScreen extends StatefulWidget {
+  const TeacherAnnouncementScreen({super.key});
 
   @override
-  State<TeacherAnnouncementsScreen> createState() =>
-      _TeacherAnnouncementsScreenState();
+  State<TeacherAnnouncementScreen> createState() =>
+      _TeacherAnnouncementScreenState();
 }
 
-class _TeacherAnnouncementsScreenState
-    extends State<TeacherAnnouncementsScreen> {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
+class _TeacherAnnouncementScreenState
+    extends State<TeacherAnnouncementScreen> {
+  TextEditingController titleC = TextEditingController();
+  TextEditingController messageC = TextEditingController();
 
-  TextEditingController title = TextEditingController();
-  TextEditingController message = TextEditingController();
-
-  String? teacherDept;
+  String? department;
   String? assignedClass;
-
-  bool loading = false;
 
   @override
   void initState() {
     super.initState();
-    loadTeacherInfo();
+    loadTeacher();
   }
 
-  Future<void> loadTeacherInfo() async {
-    var doc = await _db.collection("users").doc(uid).get();
-    teacherDept = doc["department"];
-    assignedClass = doc["assignedClass"];
-    setState(() {});
+  Future<void> loadTeacher() async {
+    String uid = FirebaseAuth.instance.currentUser!.uid;
+    var doc =
+        await FirebaseFirestore.instance.collection("users").doc(uid).get();
+
+    setState(() {
+      department = doc["department"];
+      assignedClass = doc["assignedClass"];
+    });
   }
 
-  Future<void> sendAnnouncement({String? docId}) async {
-    if (title.text.trim().isEmpty || message.text.trim().isEmpty) {
-      Get.snackbar("Missing Fields", "Please fill all fields",
+  Future<void> _createAnnouncement() async {
+    if (titleC.text.isEmpty || messageC.text.isEmpty) {
+      Get.snackbar("Error", "Fill all details",
           backgroundColor: Colors.red, colorText: Colors.white);
       return;
     }
 
-    setState(() => loading = true);
+    await FirebaseFirestore.instance.collection("announcements").add({
+      "title": titleC.text,
+      "message": messageC.text,
+      "roleTarget": "teacherArea",
+      "departmentTarget": department,
+      "classTarget": assignedClass ?? "",
+      "timestamp": Timestamp.now(),
+      "creatorRole": "teacher",
+    });
 
-    Map<String, dynamic> data = {
-      "title": title.text.trim(),
-      "message": message.text.trim(),
-      "timestamp": DateTime.now().millisecondsSinceEpoch,
-      "sender": uid,
-      "senderType": "teacher",
-      "department": teacherDept,
-      "class": assignedClass,
-    };
+    titleC.clear();
+    messageC.clear();
 
-    if (docId == null) {
-      await _db.collection("announcements").add(data);
-      Get.snackbar("Success", "Announcement Sent!",
-          backgroundColor: Colors.black, colorText: Colors.white);
-    } else {
-      await _db.collection("announcements").doc(docId).update(data);
-      Get.snackbar("Updated", "Announcement Updated!",
-          backgroundColor: Colors.black, colorText: Colors.white);
-    }
-
-    setState(() => loading = false);
-    title.clear();
-    message.clear();
-  }
-
-  Future<void> deleteAnnouncement(String id) async {
-    await _db.collection("announcements").doc(id).delete();
-    Get.snackbar("Deleted", "Announcement Removed!",
-        backgroundColor: Colors.black, colorText: Colors.white);
+    Get.snackbar("Success", "Announcement sent!",
+        backgroundColor: Colors.green, colorText: Colors.black);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (teacherDept == null) {
+    if (department == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+          body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
       appBar: AppBar(title: const Text("Teacher Announcements")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: title,
-              decoration: const InputDecoration(labelText: "Title"),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: message,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: "Message"),
-            ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.black,
+            builder: (_) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleC,
+                      decoration: const InputDecoration(labelText: "Title"),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: messageC,
+                      maxLines: 3,
+                      decoration: const InputDecoration(labelText: "Message"),
+                    ),
+                    const SizedBox(height: 18),
+                    ElevatedButton(
+                        onPressed: _createAnnouncement,
+                        child: const Text("Send"))
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance
+            .collection("announcements")
+            .where("creatorRole", isEqualTo: "teacher")
+            .where("departmentTarget", isEqualTo: department)
+            .orderBy("timestamp", descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+                child: CircularProgressIndicator(color: Colors.white));
+          }
 
-            const SizedBox(height: 14),
+          var docs = snapshot.data!.docs;
 
-            ElevatedButton(
-              onPressed: loading ? null : () => sendAnnouncement(),
-              child: loading
-                  ? const CircularProgressIndicator(color: Colors.black)
-                  : const Text("Send Announcement"),
-            ),
-
-            const SizedBox(height: 20),
-
-            const Divider(color: Colors.white),
-
-            const Text("My Previous Announcements",
-                style: TextStyle(fontSize: 18, color: Colors.white)),
-
-            const SizedBox(height: 10),
-
-            Expanded(
-              child: StreamBuilder(
-                stream: _db
-                    .collection("announcements")
-                    .where("sender", isEqualTo: uid)
-                    .orderBy("timestamp", descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(
-                        child: CircularProgressIndicator(color: Colors.white));
-                  }
-
-                  var docs = snapshot.data!.docs;
-
-                  if (docs.isEmpty) {
-                    return const Center(
-                        child: Text("No announcements yet",
-                            style: TextStyle(color: Colors.white70)));
-                  }
-
-                  return ListView.builder(
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) {
-                      var doc = docs[index];
-                      return Card(
-                        child: ListTile(
-                          title: Text(doc["title"],
-                              style: const TextStyle(color: Colors.white)),
-                          subtitle: Text(doc["message"],
-                              style: const TextStyle(color: Colors.white70)),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit,
-                                    color: Colors.white),
-                                onPressed: () =>
-                                    sendAnnouncement(docId: doc.id),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.redAccent),
-                                onPressed: () =>
-                                    deleteAnnouncement(doc.id),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
+          if (docs.isEmpty) {
+            return const Center(
+              child: Text(
+                "No Announcements Yet",
+                style: TextStyle(color: Colors.white),
               ),
-            )
-          ],
-        ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: docs.length,
+            itemBuilder: (_, i) {
+              var a = docs[i];
+
+              return Card(
+                child: ListTile(
+                  title: Text(a["title"],
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18)),
+                  subtitle: Text(a["message"],
+                      style: const TextStyle(color: Colors.white70)),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
