@@ -3,9 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'core/services/notification_service.dart';
-import 'core/services/push_background_service.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 
 
@@ -35,10 +32,6 @@ import 'views/student/student_announcements.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
-  await NotificationService.initializeNotifications();
-  NotificationService.listenForeground();
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   runApp(const MyApp());
 }
 
