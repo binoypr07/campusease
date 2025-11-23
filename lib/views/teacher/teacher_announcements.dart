@@ -11,39 +11,34 @@ class TeacherAnnouncementsScreen extends StatefulWidget {
       _TeacherAnnouncementsScreenState();
 }
 
-class _TeacherAnnouncementsScreenState extends State<TeacherAnnouncementsScreen> {
+class _TeacherAnnouncementsScreenState
+    extends State<TeacherAnnouncementsScreen> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String uid = FirebaseAuth.instance.currentUser!.uid;
 
   String? teacherDept;
-  String? assignedClass;
-  String uid = FirebaseAuth.instance.currentUser!.uid;
+  String? teacherClass;
   bool loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadTeacher();
+    load();
   }
 
-  Future<void> _loadTeacher() async {
+  Future<void> load() async {
     var doc = await _db.collection("users").doc(uid).get();
-    if (doc.exists) {
-      var data = doc.data()!;
-      teacherDept = data["department"];
-      assignedClass = data["assignedClass"];
-    }
+    teacherDept = doc["department"];
+    teacherClass = doc["assignedClass"];
     setState(() => loading = false);
   }
 
-  // --------------------------
-  // CREATE ANNOUNCEMENT
-  // --------------------------
-  Future<void> _openCreate() async {
+  Future<void> _create() async {
     TextEditingController titleC = TextEditingController();
-    TextEditingController msgC = TextEditingController();
+    TextEditingController bodyC = TextEditingController();
 
-    String audienceType = "department"; // default
-    String audienceValue = teacherDept ?? "";
+    String targetType = "department";
+    String targetValue = teacherDept ?? "";
 
     await showDialog(
       context: context,
@@ -51,164 +46,102 @@ class _TeacherAnnouncementsScreenState extends State<TeacherAnnouncementsScreen>
         backgroundColor: Colors.black,
         title: const Text("Create Announcement",
             style: TextStyle(color: Colors.white)),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: titleC,
-                decoration: const InputDecoration(labelText: "Title"),
-                style: const TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: msgC,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: "Message"),
-                style: const TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 12),
-
-              // TARGET SELECTOR
-              DropdownButtonFormField(
-                value: audienceType,
-                dropdownColor: Colors.black,
-                decoration: const InputDecoration(labelText: "Target"),
-                items: [
-                  DropdownMenuItem(
-                      value: "department",
-                      child: Text("Department ($teacherDept)")),
-                  DropdownMenuItem(
-                      value: "class",
-                      child: Text("Class ($assignedClass)")),
-                ],
-                onChanged: (v) {
-                  if (v == null) return;
-                  setState(() {
-                    audienceType = v;
-                    audienceValue =
-                        v == "department" ? teacherDept! : assignedClass!;
-                  });
-                },
-              ),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+              controller: titleC,
+              decoration: const InputDecoration(labelText: "Title"),
+              style: const TextStyle(color: Colors.white)),
+          TextField(
+              controller: bodyC,
+              decoration: const InputDecoration(labelText: "Message"),
+              maxLines: 4,
+              style: const TextStyle(color: Colors.white)),
+          DropdownButtonFormField(
+            dropdownColor: Colors.black,
+            value: targetType,
+            items: [
+              DropdownMenuItem(
+                  value: "department",
+                  child: Text("Department ($teacherDept)")),
+              DropdownMenuItem(
+                  value: "class", child: Text("Class ($teacherClass)")),
             ],
+            onChanged: (v) {
+              targetType = v!;
+              targetValue =
+                  v == "department" ? teacherDept! : teacherClass ?? "";
+            },
           ),
-        ),
+        ]),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.white)),
-          ),
+              onPressed: () => Get.back(),
+              child: const Text("Cancel", style: TextStyle(color: Colors.white))),
           ElevatedButton(
-            onPressed: () async {
-              String title = titleC.text.trim();
-              String msg = msgC.text.trim();
-
-              if (title.isEmpty || msg.isEmpty) {
-                Get.snackbar("Error", "All fields required",
-                    backgroundColor: Colors.red, colorText: Colors.white);
-                return;
-              }
-
-              Map<String, dynamic> data = {
-                "title": title,
-                "message": msg,
-                "createdByUid": uid,
-                "createdAt": FieldValue.serverTimestamp(),
-                "audienceType": audienceType,
-                "audienceValue": audienceValue,
-              };
-
-              await _db.collection("announcements").add(data);
-
-              Get.back();
-              Get.snackbar("Success", "Announcement Sent",
-                  backgroundColor: Colors.black, colorText: Colors.white);
-            },
-            child: const Text("Send"),
-          ),
+              onPressed: () async {
+                await _db.collection("announcements").add({
+                  "title": titleC.text.trim(),
+                  "body": bodyC.text.trim(),
+                  "createdByUid": uid,
+                  "createdAt": FieldValue.serverTimestamp(),
+                  "target": {"type": targetType, "value": targetValue},
+                });
+                Get.back();
+              },
+              child: const Text("Send"))
         ],
       ),
     );
   }
 
-  // FILTER ANNOUNCEMENTS FOR TEACHER
-  bool isVisibleToTeacher(Map<String, dynamic> a) {
-    String type = a["audienceType"] ?? "all";
-    String value = a["audienceValue"] ?? "";
-
-    if (type == "all") return true;
-    if (type == "department" && value == teacherDept) return true;
-    if (type == "class" && value == assignedClass) return true;
-
-    if ((a["createdByUid"] ?? "") == uid) return true;
+  bool _filter(Map<String, dynamic> doc) {
+    var t = doc["target"];
+    if (t["type"] == "all") return true;
+    if (t["type"] == "department" && t["value"] == teacherDept) return true;
+    if (t["type"] == "class" && t["value"] == teacherClass) return true;
+    if (doc["createdByUid"] == uid) return true;
     return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator(color: Colors.white)),
-      );
-    }
+    if (loading) return const Center(child: CircularProgressIndicator());
 
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(title: const Text("Announcements")),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openCreate,
-        child: const Icon(Icons.add),
-      ),
       body: StreamBuilder(
         stream: _db
             .collection("announcements")
             .orderBy("createdAt", descending: true)
             .snapshots(),
-        builder: (context, snap) {
-          if (!snap.hasData) {
-            return const Center(
-                child: CircularProgressIndicator(color: Colors.white));
-          }
+        builder: (_, snapshot) {
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
 
-          var docs = snap.data!.docs;
-          var filtered = docs
-              .map((d) => d.data() as Map<String, dynamic>)
-              .where((a) => isVisibleToTeacher(a))
+          var filtered = snapshot.data!.docs
+              .where((e) => _filter(e.data() as Map<String, dynamic>))
               .toList();
 
-          if (filtered.isEmpty) {
-            return const Center(
-                child: Text("No announcements",
-                    style: TextStyle(color: Colors.white)));
-          }
-
           return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: filtered.length,
-            itemBuilder: (context, i) {
-              var a = filtered[i];
+              padding: const EdgeInsets.all(12),
+              itemCount: filtered.length,
+              itemBuilder: (_, i) {
+                var d = filtered[i].data() as Map<String, dynamic>;
 
-              return Card(
-                color: Colors.black,
-                shape: RoundedRectangleBorder(
-                    side: const BorderSide(color: Colors.white70)),
-                child: ListTile(
-                  title: Text(a["title"],
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold)),
-                  subtitle: Text(a["message"] ?? "",
-                      style: const TextStyle(color: Colors.white70)),
-                  trailing: (a["createdByUid"] == uid)
-                      ? const Icon(Icons.check, color: Colors.white)
-                      : null,
-                ),
-              );
-            },
-          );
+                return Card(
+                  child: ListTile(
+                    title: Text(d["title"],
+                        style: const TextStyle(color: Colors.white)),
+                    subtitle: Text(d["body"],
+                        style: const TextStyle(color: Colors.white70)),
+                  ),
+                );
+              });
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _create,
+        child: const Icon(Icons.add),
       ),
     );
   }
