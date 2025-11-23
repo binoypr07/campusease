@@ -35,6 +35,18 @@ class _StudentAnnouncementsScreenState
     setState(() => loading = false);
   }
 
+  bool _isRelevant(Map<String, dynamic> a) {
+    var t = (a["target"] ?? {}) as Map<String, dynamic>;
+    String type = t["type"] ?? "all";
+    String value = t["value"] ?? "";
+
+    if (type == "all") return true;
+    if (type == "department" && value == department) return true;
+    if (type == "class" && value == classYear) return true;
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -58,20 +70,10 @@ class _StudentAnnouncementsScreenState
                 child: CircularProgressIndicator(color: Colors.white));
           }
 
-          var allDocs = snapshot.data!.docs;
-
-          // -------------------------
-          // FILTER LOGIC FOR STUDENTS
-          // -------------------------
-          var filtered = allDocs.where((doc) {
-            var a = doc.data();
-            String audience = a["audienceType"] ?? "all";
-
-            return audience == "all" ||
-                audience == "students" ||
-                audience == classYear ||
-                audience == department;
-          }).toList();
+          var docs = snapshot.data!.docs;
+          var filtered = docs
+              .where((d) => _isRelevant(d.data() as Map<String, dynamic>))
+              .toList();
 
           if (filtered.isEmpty) {
             return const Center(
@@ -86,14 +88,13 @@ class _StudentAnnouncementsScreenState
             padding: const EdgeInsets.all(12),
             itemCount: filtered.length,
             itemBuilder: (context, index) {
-              var a = filtered[index].data();
+              var a = filtered[index].data() as Map<String, dynamic>;
 
               return Card(
                 color: Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side:
-                      const BorderSide(color: Colors.white70, width: 1.2),
+                  side: const BorderSide(color: Colors.white70, width: 1.2),
                 ),
                 child: ListTile(
                   title: Text(
@@ -104,7 +105,7 @@ class _StudentAnnouncementsScreenState
                         fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    a["message"] ?? "",
+                    a["body"] ?? "",
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ),
