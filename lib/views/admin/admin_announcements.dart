@@ -11,19 +11,18 @@ class AdminAnnouncementsScreen extends StatefulWidget {
       _AdminAnnouncementsScreenState();
 }
 
-class _AdminAnnouncementsScreenState
-    extends State<AdminAnnouncementsScreen> {
-  final _db = FirebaseFirestore.instance;
-  final uid = FirebaseAuth.instance.currentUser!.uid;
+class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String uid = FirebaseAuth.instance.currentUser!.uid;
 
   Future<void> _openEditor({DocumentSnapshot? doc}) async {
     TextEditingController titleC =
-        TextEditingController(text: doc?['title'] ?? '');
+        TextEditingController(text: doc != null ? doc['title'] : '');
     TextEditingController bodyC =
-        TextEditingController(text: doc?['body'] ?? '');
+        TextEditingController(text: doc != null ? doc['body'] : '');
 
-    String targetType = doc?['target']?['type'] ?? 'all';
-    String targetValue = doc?['target']?['value'] ?? '';
+    String targetType = doc != null ? doc['target']['type'] : 'all';
+    String targetValue = doc != null ? doc['target']['value'] : '';
 
     await showDialog(
       context: context,
@@ -33,56 +32,62 @@ class _AdminAnnouncementsScreenState
           doc == null ? "Create Announcement" : "Edit Announcement",
           style: const TextStyle(color: Colors.white),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleC,
-              decoration: const InputDecoration(labelText: "Title"),
-              style: const TextStyle(color: Colors.white),
-            ),
-            TextField(
-              controller: bodyC,
-              maxLines: 4,
-              decoration: const InputDecoration(labelText: "Message"),
-              style: const TextStyle(color: Colors.white),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: targetType,
-              dropdownColor: Colors.black,
-              items: const [
-                DropdownMenuItem(value: "all", child: Text("All")),
-                DropdownMenuItem(
-                    value: "department", child: Text("Department")),
-                DropdownMenuItem(value: "class", child: Text("Class")),
-              ],
-              onChanged: (v) => setState(() => targetType = v!),
-            ),
-            if (targetType != "all")
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
               TextField(
-                onChanged: (v) => targetValue = v,
-                controller: TextEditingController(text: targetValue),
-                decoration: InputDecoration(
-                  labelText: targetType == "department"
-                      ? "Department"
-                      : "Class (ex: CS1)",
-                ),
+                controller: titleC,
                 style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: "Title"),
               ),
-          ],
+              const SizedBox(height: 8),
+              TextField(
+                controller: bodyC,
+                maxLines: 5,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: "Message"),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: targetType,
+                dropdownColor: Colors.black,
+                decoration: const InputDecoration(labelText: "Target"),
+                items: const [
+                  DropdownMenuItem(value: "all", child: Text("All")),
+                  DropdownMenuItem(value: "department", child: Text("Department")),
+                  DropdownMenuItem(value: "class", child: Text("Class")),
+                ],
+                onChanged: (v) => setState(() => targetType = v!),
+              ),
+              const SizedBox(height: 8),
+              if (targetType != "all")
+                TextField(
+                  controller: TextEditingController(text: targetValue),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText:
+                        targetType == "department" ? "Department" : "Class",
+                  ),
+                  onChanged: (v) => targetValue = v,
+                ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Get.back(),
-              child: const Text("Cancel",
-                  style: TextStyle(color: Colors.white))),
+            child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+            onPressed: () => Navigator.pop(context),
+          ),
           ElevatedButton(
             onPressed: () async {
               if (titleC.text.trim().isEmpty ||
                   bodyC.text.trim().isEmpty) {
-                Get.snackbar("Error", "Title & body required",
-                    backgroundColor: Colors.red);
+                Get.snackbar(
+                  "Error",
+                  "Title & Message required",
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
                 return;
               }
 
@@ -97,16 +102,34 @@ class _AdminAnnouncementsScreenState
                 }
               };
 
-              if (doc == null) {
-                await _db.collection("announcements").add(data);
-              } else {
-                await _db.collection("announcements").doc(doc.id).update(data);
-              }
+              try {
+                if (doc == null) {
+                  await _db.collection("announcements").add(data);
+                } else {
+                  await _db
+                      .collection("announcements")
+                      .doc(doc.id)
+                      .update(data);
+                }
 
-              Get.back();
+                Get.back();
+                Get.snackbar(
+                  "Success",
+                  "Announcement Saved",
+                  backgroundColor: Colors.black,
+                  colorText: Colors.white,
+                );
+              } catch (e) {
+                Get.snackbar(
+                  "Error",
+                  "Failed: $e",
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              }
             },
             child: const Text("Save"),
-          )
+          ),
         ],
       ),
     );
@@ -114,6 +137,8 @@ class _AdminAnnouncementsScreenState
 
   Future<void> _delete(String id) async {
     await _db.collection("announcements").doc(id).delete();
+    Get.snackbar("Deleted", "Announcement removed",
+        backgroundColor: Colors.black, colorText: Colors.white);
   }
 
   @override
@@ -125,38 +150,47 @@ class _AdminAnnouncementsScreenState
             .collection("announcements")
             .orderBy("createdAt", descending: true)
             .snapshots(),
-        builder: (_, snap) {
-          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+        builder: (context, snap) {
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           var docs = snap.data!.docs;
+
+          if (docs.isEmpty) {
+            return const Center(
+                child: Text("No Announcements",
+                    style: TextStyle(color: Colors.white)));
+          }
 
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: docs.length,
             itemBuilder: (_, i) {
-              var a = docs[i].data() as Map<String, dynamic>;
-              var target = a["target"] ?? {};
+              var d = docs[i];
+              var a = d.data() as Map<String, dynamic>;
+
+              String targetText = a["target"]["type"] == "all"
+                  ? "All Users"
+                  : "${a['target']['type']} : ${a['target']['value']}";
 
               return Card(
                 child: ListTile(
-                  title: Text(a["title"] ?? "",
+                  title: Text(a["title"],
                       style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold)),
-                  subtitle: Text(
-                    a["body"] ?? "",
-                    style: const TextStyle(color: Colors.white70),
-                  ),
+                  subtitle: Text(a["body"],
+                      style: const TextStyle(color: Colors.white70)),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                          onPressed: () => _openEditor(doc: docs[i]),
-                          icon: const Icon(Icons.edit, color: Colors.white)),
+                          icon: const Icon(Icons.edit, color: Colors.white),
+                          onPressed: () => _openEditor(doc: d)),
                       IconButton(
-                          onPressed: () => _delete(docs[i].id),
-                          icon:
-                              const Icon(Icons.delete, color: Colors.white)),
+                          icon: const Icon(Icons.delete, color: Colors.white),
+                          onPressed: () => _delete(d.id)),
                     ],
                   ),
                 ),
