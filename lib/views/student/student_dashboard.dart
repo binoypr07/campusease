@@ -6,6 +6,7 @@ import 'qr.dart';
 import 'timetable_page.dart';
 import 'feedback_page.dart';
 import 'polls_page.dart';
+import 'student_internal_marks.dart';
 
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
@@ -118,13 +119,24 @@ class StudentDashboard extends StatelessWidget {
                 buildCard(
                   icon: Icons.grade,
                   title: "Internal Marks",
-                  subtitle: "Subject-wise semester marks",
+                  subtitle: "View your marks",
                   onTap: () {
-                    Get.snackbar(
-                      "Coming Soon",
-                      "Internal marks coming!",
-                      backgroundColor: Colors.black,
-                      colorText: const Color.fromARGB(255, 216, 211, 211),
+                    final assignedClass = data['classYear'] ?? '';
+                    if (assignedClass.isEmpty) {
+                      Get.snackbar(
+                        "Class Not Assigned",
+                        "Your class is not assigned yet",
+                        backgroundColor: Colors.black,
+                        colorText: Colors.white,
+                      );
+                      return;
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            StudentInternalMarks(className: assignedClass),
+                      ),
                     );
                   },
                 ),

@@ -6,6 +6,7 @@ import 'editable_timetable_page.dart';
 import 'teacher_feedback_page.dart';
 import 'teacherPollPage.dart';
 import 'teacher_poll_results.dart';
+import ' internal_marks_page.dart';
 
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
@@ -120,6 +121,32 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 } else {
                   Get.toNamed('/attendance');
                 }
+              },
+            ),
+            // ------------------ INTERNAL MARKS ------------------
+            buildCard(
+              icon: Icons.grade,
+              title: "Internal Marks",
+              subtitle: assignedClass == null || assignedClass!.isEmpty
+                  ? "Assign class first"
+                  : "Enter marks for your class",
+              onTap: () {
+                if (assignedClass == null || assignedClass!.isEmpty) {
+                  Get.snackbar(
+                    "Class Not Assigned",
+                    "Please assign a class first!",
+                    backgroundColor: Colors.black,
+                    colorText: Colors.white,
+                  );
+                  return;
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        InternalMarksPage(className: assignedClass!),
+                  ),
+                );
               },
             ),
 
