@@ -14,8 +14,10 @@ class StudentInternalMarks extends StatelessWidget {
       appBar: AppBar(title: const Text("My Internal Marks")),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
-            .collection("internalMarks")
-            .doc("${className}_$uid")
+            .collection("internal_marks")
+            .doc("${className}_marks")
+            .collection("students")
+            .doc(uid)
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData)
@@ -23,19 +25,24 @@ class StudentInternalMarks extends StatelessWidget {
 
           final data = snapshot.data!.data() as Map<String, dynamic>?;
 
-          if (data == null) return const Center(child: Text("No marks found"));
+          if (data == null || data["subjects"] == null) {
+            return const Center(child: Text("No marks found"));
+          }
 
-          return Padding(
+          final subjects = List<Map<String, dynamic>>.from(data["subjects"]);
+
+          return ListView.builder(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Mark: ${data['mark'] ?? '0'}",
-                  style: const TextStyle(fontSize: 18),
+            itemCount: subjects.length,
+            itemBuilder: (context, index) {
+              final subject = subjects[index];
+              return Card(
+                child: ListTile(
+                  title: Text(subject["name"]),
+                  trailing: Text(subject["mark"].toString()),
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),

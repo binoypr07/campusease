@@ -10,117 +10,105 @@ class InternalMarksPage extends StatefulWidget {
 }
 
 class _InternalMarksPageState extends State<InternalMarksPage> {
-  List<Map<String, dynamic>> students = [];
-  String? selectedStudentId;
+  final studentController = TextEditingController();
+  List<Map<String, dynamic>> subjects = [];
+  final subjectController = TextEditingController();
+  final markController = TextEditingController();
 
-  final mid1Controller = TextEditingController();
-  final mid2Controller = TextEditingController();
+  void addSubject() {
+    if (subjectController.text.isEmpty || markController.text.isEmpty) return;
 
-  @override
-  void initState() {
-    super.initState();
-    fetchStudents();
-  }
-
-  Future<void> fetchStudents() async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('classYear', isEqualTo: widget.className)
-          .where('role', isEqualTo: 'student')
-          .get();
-
-      setState(() {
-        students = snapshot.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>? ?? {};
-          return {'id': doc.id, 'name': data['name'] ?? 'No Name'};
-        }).toList();
+    setState(() {
+      subjects.add({
+        "name": subjectController.text.trim(),
+        "mark": int.tryParse(markController.text.trim()) ?? 0,
       });
-    } catch (e) {
-      print("Error fetching students: $e");
-    }
+    });
+
+    subjectController.clear();
+    markController.clear();
   }
 
   void submitMarks() async {
-    if (selectedStudentId == null ||
-        mid1Controller.text.isEmpty ||
-        mid2Controller.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
-      return;
-    }
+    if (studentController.text.isEmpty || subjects.isEmpty) return;
 
-    final mid1 = int.tryParse(mid1Controller.text) ?? 0;
-    final mid2 = int.tryParse(mid2Controller.text) ?? 0;
+    String studentId = studentController.text.trim();
 
     await FirebaseFirestore.instance
-        .collection('internalMarks')
-        .doc("${widget.className}_${selectedStudentId!}")
-        .set({
-          'mid1': mid1,
-          'mid2': mid2,
-          'total': mid1 + mid2,
-          'studentId': selectedStudentId,
-          'className': widget.className,
-        });
+        .collection("internal_marks")
+        .doc("${widget.className}_marks")
+        .collection("students")
+        .doc(studentId)
+        .set({"subjects": subjects});
 
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text("Marks saved")));
 
-    mid1Controller.clear();
-    mid2Controller.clear();
+    studentController.clear();
     setState(() {
-      selectedStudentId = null;
+      subjects = [];
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Enter Internal Marks")),
+      appBar: AppBar(title: const Text("Enter Internal Marks")),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: ListView(
           children: [
-            DropdownButtonFormField<String>(
-              value: selectedStudentId,
-              hint: const Text("Select Student"),
-              items: students
-                  .map(
-                    (student) => DropdownMenuItem<String>(
-                      value: student['id'],
-                      child: Text(student['name'] ?? 'No Name'),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (val) => setState(() => selectedStudentId = val),
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 10),
             TextField(
-              controller: mid1Controller,
-              keyboardType: TextInputType.number,
+              controller: studentController,
               decoration: const InputDecoration(
-                labelText: "Mid1 Marks",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: mid2Controller,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Mid2 Marks",
+                labelText: "Student ID",
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: submitMarks,
-              child: const Text("Submit Marks"),
+            Text(
+              "Subjects & Marks",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
+            const SizedBox(height: 10),
+            ...subjects.map(
+              (s) => ListTile(
+                title: Text(s["name"]),
+                trailing: Text(s["mark"].toString()),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: subjectController,
+                    decoration: const InputDecoration(
+                      labelText: "Subject",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: markController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: "Mark",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle, color: Colors.green),
+                  onPressed: addSubject,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(onPressed: submitMarks, child: const Text("Submit")),
           ],
         ),
       ),
