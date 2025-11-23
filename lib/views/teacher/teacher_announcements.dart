@@ -67,7 +67,7 @@ class _TeacherAnnouncementsScreenState extends State<TeacherAnnouncementsScreen>
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: targetType,
+                initialValue: targetType,
                 dropdownColor: Colors.black,
                 decoration: const InputDecoration(labelText: "Target"),
                 items: <DropdownMenuItem<String>>[

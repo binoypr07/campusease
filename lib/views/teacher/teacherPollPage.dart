@@ -170,7 +170,7 @@ class _TeacherPollPageState extends State<TeacherPollPage> {
 
             // Class selector
             DropdownButtonFormField<String>(
-              value: selectedClass,
+              initialValue: selectedClass,
               decoration: const InputDecoration(
                 labelText: "Select Class",
                 border: OutlineInputBorder(),

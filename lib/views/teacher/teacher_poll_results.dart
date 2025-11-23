@@ -143,8 +143,9 @@ class TeacherPollResultsPage extends StatelessWidget {
                             .collection('votes')
                             .snapshots(),
                         builder: (context, voteSnapshot) {
-                          if (!voteSnapshot.hasData)
+                          if (!voteSnapshot.hasData) {
                             return const Text("Loading votes...");
+                          }
 
                           final votes = voteSnapshot.data!.docs;
                           final voteCount = countVotes(votes, options);

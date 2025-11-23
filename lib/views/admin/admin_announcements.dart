@@ -50,7 +50,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: targetType,
+                initialValue: targetType,
                 dropdownColor: Colors.black,
                 decoration: const InputDecoration(labelText: "Target"),
                 items: const [
