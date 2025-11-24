@@ -4,9 +4,6 @@ import 'firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
-
-
 // ROUTES
 import 'views/admin/admin_dashboard.dart';
 import 'views/admin/pending_users.dart';
@@ -29,8 +26,6 @@ import 'views/student/student_announcements.dart';
 import 'views/admin/admin_students_list.dart';
 import 'views/admin/admin_teacher_list.dart';
 
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -46,16 +41,11 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: "CampusEase",
 
-      // ---------------------------------------------------
-      //                PURE BLACK & WHITE THEME
-      // ---------------------------------------------------
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
         primaryColor: Colors.white,
 
-        // ---------- APPBAR ----------
-      
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
@@ -67,7 +57,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        // ---------- TEXT ----------
         textTheme: const TextTheme(
           bodyLarge: TextStyle(color: Colors.white),
           bodyMedium: TextStyle(color: Colors.white),
@@ -77,7 +66,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        // ---------- TEXTFIELDS ----------
         inputDecorationTheme: InputDecorationTheme(
           labelStyle: const TextStyle(color: Colors.white),
           enabledBorder: OutlineInputBorder(
@@ -90,11 +78,10 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        // ---------- BUTTONS ----------
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white, // white button
-            foregroundColor: Colors.black, // black text
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -102,50 +89,50 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        // ---------- CARDS ----------
         cardTheme: CardThemeData(
-          color: Colors.black, // pure black cards
-          elevation: 4,
+          color: Colors.black,
+          elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: const BorderSide(color: Colors.white, width: 1.4),
           ),
         ),
       ),
-        getPages: [
-          GetPage(
-             name: '/adminTeachers',
-             page: () => const AdminTeachersListScreen(),
-            ),
-          GetPage(
-             name: '/adminStudents',
-             page: () => const AdminStudentsListScreen(),
-           ),
-          ] ,
 
       // ---------------------------------------------------
-      //                      ROUTES
+      //                 GETX ROUTES (ONLY)
       // ---------------------------------------------------
-      routes: {
-        '/login': (_) => const LoginScreen(),
-        '/checkRole': (_) => const CheckRole(),
-        '/registerStudent': (_) => const RegisterStudent(),
-        '/registerTeacher': (_) => const RegisterTeacher(),
-        '/adminDashboard': (_) => const AdminDashboard(),
-        '/teacherDashboard': (_) => const TeacherDashboard(),
-        '/studentDashboard': (_) => const StudentDashboard(),
-        '/pendingUsers': (_) => const PendingUsersScreen(),
-        '/assignClass': (_) => const AssignClassScreen(),
-        '/attendance': (_) => const AttendanceScreen(),
-        '/teacherProfile': (_) => const TeacherProfileScreen(),
-        '/approveStudents': (_) => const TeacherApproveStudents(),
-        '/studentProfile': (_) => const StudentProfileScreen(),
-        '/studentAttendance': (_) => const StudentAttendanceScreen(),
-        '/studentInfo': (_) => const StudentInfoPage(),
-        '/adminAnnouncements': (_) => const AdminAnnouncementsScreen(),
-        '/teacherAnnouncements': (_) => const TeacherAnnouncementsScreen(),
-        '/studentAnnouncements': (_) => const StudentAnnouncementsScreen(),
-      },
+      getPages: [
+
+        GetPage(name: '/login', page: () => const LoginScreen()),
+        GetPage(name: '/checkRole', page: () => const CheckRole()),
+
+        // AUTH
+        GetPage(name: '/registerStudent', page: () => const RegisterStudent()),
+        GetPage(name: '/registerTeacher', page: () => const RegisterTeacher()),
+
+        // ADMIN
+        GetPage(name: '/adminDashboard', page: () => const AdminDashboard()),
+        GetPage(name: '/pendingUsers', page: () => const PendingUsersScreen()),
+        GetPage(name: '/adminAnnouncements', page: () => const AdminAnnouncementsScreen()),
+        GetPage(name: '/adminTeachers', page: () => const AdminAllTeachersScreen()),
+        GetPage(name: '/adminStudents', page: () => const AdminAllStudentsScreen()),
+
+        // TEACHER
+        GetPage(name: '/teacherDashboard', page: () => const TeacherDashboard()),
+        GetPage(name: '/assignClass', page: () => const AssignClassScreen()),
+        GetPage(name: '/attendance', page: () => const AttendanceScreen()),
+        GetPage(name: '/teacherProfile', page: () => const TeacherProfileScreen()),
+        GetPage(name: '/approveStudents', page: () => const TeacherApproveStudents()),
+        GetPage(name: '/teacherAnnouncements', page: () => const TeacherAnnouncementsScreen()),
+
+        // STUDENT
+        GetPage(name: '/studentDashboard', page: () => const StudentDashboard()),
+        GetPage(name: '/studentProfile', page: () => const StudentProfileScreen()),
+        GetPage(name: '/studentAttendance', page: () => const StudentAttendanceScreen()),
+        GetPage(name: '/studentInfo', page: () => const StudentInfoPage()),
+        GetPage(name: '/studentAnnouncements', page: () => const StudentAnnouncementsScreen()),
+      ],
 
       home: FirebaseAuth.instance.currentUser == null
           ? const LoginScreen()
