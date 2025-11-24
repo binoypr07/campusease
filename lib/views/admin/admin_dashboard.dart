@@ -69,33 +69,19 @@ class AdminDashboard extends StatelessWidget {
 
             // ------------------- ALL TEACHERS -------------------
             buildCard(
-              icon: Icons.people,
-              title: "All Teachers",
-              subtitle: "View teacher details (coming soon)",
-              onTap: () {
-                Get.snackbar(
-                  "Info",
-                  "Feature coming soon!",
-                  backgroundColor: Colors.black,
-                  colorText: Colors.white,
-                );
-              },
+             icon: Icons.people,
+             title: "All Teachers",
+             subtitle: "View teachers department-wise",
+             onTap: () => Get.toNamed('/adminTeachers'),
             ),
 
-            // ------------------- ALL STUDENTS -------------------
+            //------------all students---------------
             buildCard(
-              icon: Icons.school,
-              title: "All Students",
-              subtitle: "View student details (coming soon)",
-              onTap: () {
-                Get.snackbar(
-                  "Info",
-                  "Feature coming soon!",
-                  backgroundColor: Colors.black,
-                  colorText: Colors.white,
-                );
-              },
-            ),
+             icon: Icons.school,
+             title: "All Students",
+             subtitle: "View students by department/class",
+             onTap: () => Get.toNamed('/adminStudents'),
+             ),
 
             // ------------------- ATTENDANCE REPORTS -------------------
             buildCard(

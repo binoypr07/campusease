@@ -26,6 +26,8 @@ import 'views/student/student_info.dart';
 import 'views/admin/admin_announcements.dart';
 import 'views/teacher/teacher_announcements.dart';
 import 'views/student/student_announcements.dart';
+import 'views/admin/admin_students_list.dart';
+import 'views/admin/admin_teacher_list.dart';
 
 
 
@@ -110,6 +112,16 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
+        getPages: [
+          GetPage(
+             name: '/adminTeachers',
+             page: () => const AdminTeachersListScreen(),
+            ),
+          GetPage(
+             name: '/adminStudents',
+             page: () => const AdminStudentsListScreen(),
+           ),
+          ] ,
 
       // ---------------------------------------------------
       //                      ROUTES
