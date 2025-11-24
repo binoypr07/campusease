@@ -20,8 +20,9 @@ class StudentInternalMarks extends StatelessWidget {
             .doc(uid)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
           final data = snapshot.data!.data() as Map<String, dynamic>?;
 

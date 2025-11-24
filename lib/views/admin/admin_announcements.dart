@@ -46,7 +46,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
           const SizedBox(height: 12),
           DropdownButtonFormField(
             dropdownColor: Colors.black,
-            value: targetType,
+            initialValue: targetType,
             items: const [
               DropdownMenuItem(value: "all", child: Text("All")),
               DropdownMenuItem(value: "department", child: Text("Department")),
@@ -117,7 +117,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
             padding: const EdgeInsets.all(12),
             itemCount: docs.length,
             itemBuilder: (_, i) {
-              var d = docs[i].data() as Map<String, dynamic>;
+              var d = docs[i].data();
               return Card(
                 child: ListTile(
                   title: Text(d["title"], style: const TextStyle(color: Colors.white)),

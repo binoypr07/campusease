@@ -58,7 +58,7 @@ class _TeacherAnnouncementsScreenState
               style: const TextStyle(color: Colors.white)),
           DropdownButtonFormField(
             dropdownColor: Colors.black,
-            value: targetType,
+            initialValue: targetType,
             items: [
               DropdownMenuItem(
                   value: "department",
@@ -115,18 +115,19 @@ class _TeacherAnnouncementsScreenState
             .orderBy("createdAt", descending: true)
             .snapshots(),
         builder: (_, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
           var filtered = snapshot.data!.docs
-              .where((e) => _filter(e.data() as Map<String, dynamic>))
+              .where((e) => _filter(e.data()))
               .toList();
 
           return ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: filtered.length,
               itemBuilder: (_, i) {
-                var d = filtered[i].data() as Map<String, dynamic>;
+                var d = filtered[i].data();
 
                 return Card(
                   child: ListTile(
