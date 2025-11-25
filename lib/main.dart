@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/services/notification_handler.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 // ROUTES
 import 'views/admin/admin_dashboard.dart';
@@ -28,17 +29,32 @@ import 'views/student/student_announcements.dart';
 import 'views/admin/admin_students_list.dart';
 import 'views/admin/admin_teacher_list.dart';
 
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print("🔥 Background Notification: ${message.notification?.title}");
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // Ask Notification Permission
   await FirebaseMessaging.instance.requestPermission();
 
-  // Initialize local notification + channels
-  await NotificationHandler.init();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Listen for foreground notifications
+  await NotificationHandler.init();
   NotificationHandler.listenForeground();
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
+    print("Foreground Notification: ${msg.notification?.title}");
+
+    Get.snackbar(
+      msg.notification?.title ?? "Notification",
+      msg.notification?.body ?? "",
+      backgroundColor: Colors.black,
+      colorText: Colors.white,
+    );
+  });
 
   runApp(const MyApp());
 }

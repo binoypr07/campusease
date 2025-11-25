@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
+import 'dart:developer';
 
 class NotificationHandler {
   static final FlutterLocalNotificationsPlugin _localNotif =
@@ -42,5 +43,8 @@ class NotificationHandler {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       showLocalNotification(message);
     });
+  }
+  Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
+  log("Background Notification: ${message.notification?.title}");
   }
 }
