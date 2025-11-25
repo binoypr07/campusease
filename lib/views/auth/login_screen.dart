@@ -86,376 +86,128 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               const SizedBox(height: 40),
-              // ----------------------------   FORGOT PASSWORD ----------------------------
+              // ---------------------------- FORGOT PASSWORD ----------------------------
               Align(
                 alignment: Alignment.centerRight,
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 1.0, end: 1.0),
-                  duration: const Duration(milliseconds: 100),
-                  builder: (context, scale, child) {
-                    return Transform.scale(scale: scale, child: child);
-                  },
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () async {
-                      String userEmail = email.text.trim();
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () async {
+                    String userEmail = email.text.trim();
 
-                      if (userEmail.isEmpty) {
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: const Text("Email Required"),
-                            content: const Text(
-                              "Please enter your email before resetting password.",
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text("OK"),
-                              ),
-                            ],
-                          ),
-                        );
-                        return;
-                      }
-
-                      // MAIN POPUP WINDOW
+                    if (userEmail.isEmpty) {
                       showDialog(
                         context: context,
-                        builder: (context) {
-                          return Dialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
+                        builder: (_) => AlertDialog(
+                          title: const Text("Email Required"),
+                          content: const Text("Please enter your email first."),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("OK"),
                             ),
-                            backgroundColor: const Color(0xFF121212),
-                            child: SizedBox(
-                              width: 260,
-                              child: Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Reset Password",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 15),
-                                    const Text(
-                                      "We will send an OTP to:",
-                                      style: TextStyle(color: Colors.white70),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      userEmail,
-                                      style: const TextStyle(
-                                        color: Colors.pinkAccent,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 25),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
 
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
+                    // Popup to confirm email
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          title: const Text(
+                            "Reset Password",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          content: Text(
+                            "A reset link will be sent to:\n\n$userEmail",
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                "Cancel",
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.pop(context);
+
+                                try {
+                                  // SEND FIREBASE RESET MAIL
+                                  await FirebaseAuth.instance
+                                      .sendPasswordResetEmail(email: userEmail);
+
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      title: const Text("Email Sent"),
+                                      content: const Text(
+                                        "A password reset link has been sent to your email.",
+                                      ),
+                                      actions: [
                                         TextButton(
                                           onPressed: () =>
                                               Navigator.pop(context),
-                                          child: const Text(
-                                            "Cancel",
-                                            style: TextStyle(
-                                              color: Colors.redAccent,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-
-                                        // SEND OTP BUTTON
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.pinkAccent,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                          onPressed: () async {
-                                            Navigator.pop(context);
-
-                                            // GENERATE 6 DIGIT OTP
-                                            String otp =
-                                                (Random().nextInt(900000) +
-                                                        100000)
-                                                    .toString();
-
-                                            // SAVE OTP IN FIRESTORE
-                                            await FirebaseFirestore.instance
-                                                .collection("otp_reset")
-                                                .doc(userEmail)
-                                                .set({
-                                                  "otp": otp,
-                                                  "timestamp": DateTime.now()
-                                                      .millisecondsSinceEpoch,
-                                                });
-
-                                            // SEND OTP USING FIREBASE AUTH EMAIL
-                                            await FirebaseAuth.instance
-                                                .sendPasswordResetEmail(
-                                                  email: userEmail,
-                                                );
-
-                                            // OTP POPUP
-                                            showDialog(
-                                              context: context,
-                                              builder: (context) {
-                                                TextEditingController
-                                                otpController =
-                                                    TextEditingController();
-
-                                                return Dialog(
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          15,
-                                                        ),
-                                                  ),
-                                                  backgroundColor: const Color(
-                                                    0xFF121212,
-                                                  ),
-                                                  child: SizedBox(
-                                                    width: 260,
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                            20,
-                                                          ),
-                                                      child: Column(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          const Text(
-                                                            "Verify OTP",
-                                                            style: TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              fontSize: 18,
-                                                              color:
-                                                                  Colors.white,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 20,
-                                                          ),
-
-                                                          TextField(
-                                                            controller:
-                                                                otpController,
-                                                            keyboardType:
-                                                                TextInputType
-                                                                    .number,
-                                                            style:
-                                                                const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                ),
-                                                            decoration: const InputDecoration(
-                                                              labelText:
-                                                                  "Enter OTP",
-                                                              labelStyle:
-                                                                  TextStyle(
-                                                                    color: Colors
-                                                                        .white70,
-                                                                  ),
-                                                              enabledBorder:
-                                                                  UnderlineInputBorder(
-                                                                    borderSide:
-                                                                        BorderSide(
-                                                                          color:
-                                                                              Colors.white38,
-                                                                        ),
-                                                                  ),
-                                                              focusedBorder:
-                                                                  UnderlineInputBorder(
-                                                                    borderSide:
-                                                                        BorderSide(
-                                                                          color:
-                                                                              Colors.white,
-                                                                        ),
-                                                                  ),
-                                                            ),
-                                                          ),
-
-                                                          const SizedBox(
-                                                            height: 25,
-                                                          ),
-
-                                                          Row(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .end,
-                                                            children: [
-                                                              TextButton(
-                                                                onPressed: () =>
-                                                                    Navigator.pop(
-                                                                      context,
-                                                                    ),
-                                                                child: const Text(
-                                                                  "Cancel",
-                                                                  style: TextStyle(
-                                                                    color: Colors
-                                                                        .redAccent,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 10,
-                                                              ),
-
-                                                              ElevatedButton(
-                                                                style: ElevatedButton.styleFrom(
-                                                                  backgroundColor:
-                                                                      Colors
-                                                                          .pinkAccent,
-                                                                  shape: RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                          8,
-                                                                        ),
-                                                                  ),
-                                                                ),
-                                                                onPressed: () async {
-                                                                  String
-                                                                  enteredOtp =
-                                                                      otpController
-                                                                          .text
-                                                                          .trim();
-
-                                                                  // READ OTP FROM FIRESTORE
-                                                                  var data = await FirebaseFirestore
-                                                                      .instance
-                                                                      .collection(
-                                                                        "otp_reset",
-                                                                      )
-                                                                      .doc(
-                                                                        userEmail,
-                                                                      )
-                                                                      .get();
-
-                                                                  String
-                                                                  correctOtp =
-                                                                      data["otp"];
-
-                                                                  if (enteredOtp ==
-                                                                      correctOtp) {
-                                                                    Navigator.pop(
-                                                                      context,
-                                                                    );
-
-                                                                    showDialog(
-                                                                      context:
-                                                                          context,
-                                                                      builder: (_) => AlertDialog(
-                                                                        title: const Text(
-                                                                          "OTP Verified",
-                                                                        ),
-                                                                        content:
-                                                                            const Text(
-                                                                              "OTP verified successfully. You can now reset your password using the email link.",
-                                                                            ),
-                                                                        actions: [
-                                                                          TextButton(
-                                                                            onPressed: () => Navigator.pop(
-                                                                              context,
-                                                                            ),
-                                                                            child: const Text(
-                                                                              "OK",
-                                                                            ),
-                                                                          ),
-                                                                        ],
-                                                                      ),
-                                                                    );
-                                                                  } else {
-                                                                    showDialog(
-                                                                      context:
-                                                                          context,
-                                                                      builder: (_) => AlertDialog(
-                                                                        title: const Text(
-                                                                          "Error",
-                                                                        ),
-                                                                        content:
-                                                                            const Text(
-                                                                              "Invalid OTP. Please try again.",
-                                                                            ),
-                                                                        actions: [
-                                                                          TextButton(
-                                                                            onPressed: () => Navigator.pop(
-                                                                              context,
-                                                                            ),
-                                                                            child: const Text(
-                                                                              "OK",
-                                                                            ),
-                                                                          ),
-                                                                        ],
-                                                                      ),
-                                                                    );
-                                                                  }
-                                                                },
-                                                                child: const Text(
-                                                                  "Verify OTP",
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            );
-                                          },
-                                          child: const Text("Send OTP"),
+                                          child: const Text("OK"),
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ),
+                                  );
+                                } catch (e) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      title: const Text("Error"),
+                                      content: Text(
+                                        "Failed to send reset link:\n$e",
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text("OK"),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              },
+                              child: const Text(
+                                "Send Link",
+                                style: TextStyle(color: Colors.blue),
                               ),
                             ),
-                          );
-                        },
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color.fromARGB(255, 5, 5, 5),
-                            Color.fromARGB(255, 8, 8, 8),
                           ],
-                        ),
-                        borderRadius: BorderRadius.circular(8),
+                        );
+                      },
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color.fromARGB(255, 5, 5, 5),
+                          Color.fromARGB(255, 8, 8, 8),
+                        ],
                       ),
-                      child: const Text(
-                        "Forgot Password?",
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 247, 129, 129),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      "Forgot Password?",
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 247, 129, 129),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
                   ),
