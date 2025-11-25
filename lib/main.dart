@@ -31,21 +31,14 @@ import 'views/admin/admin_teacher_list.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Ask Notification Permission
   await FirebaseMessaging.instance.requestPermission();
+
+  // Initialize local notification + channels
   await NotificationHandler.init();
+
+  // Listen for foreground notifications
   NotificationHandler.listenForeground();
-  FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
-  print("Foreground Notification: ${msg.notification?.title}");
-
-  // Show simple popup
-  Get.snackbar(
-    msg.notification?.title ?? "Notification",
-    msg.notification?.body ?? "",
-    backgroundColor: Colors.black,
-    colorText: Colors.white,
-  );
-});
-
 
   runApp(const MyApp());
 }
