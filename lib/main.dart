@@ -31,7 +31,7 @@ import 'views/admin/admin_teacher_list.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print("🔥 Background Notification: ${message.notification?.title}");
+  print(" Background Notification: ${message.notification?.title}");
 }
 
 void main() async {
