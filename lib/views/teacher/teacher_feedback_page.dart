@@ -14,9 +14,9 @@ class TeacherFeedbackPage extends StatelessWidget {
       appBar: AppBar(title: const Text("Student Feedback")),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('feedbacks') // top-level collection
+            .collection('feedbacks')
             .where('classYear', isEqualTo: className)
-            .snapshots(), // removed orderBy to avoid errors
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -33,7 +33,7 @@ class TeacherFeedbackPage extends StatelessWidget {
             print("DEBUG: Feedback doc → ${doc.data()}");
           }
 
-          // Manual sorting by timestamp (descending)
+          // Sorting manually by timestamp DESC
           feedbacks.sort((a, b) {
             final aTime = (a['timestamp'] as Timestamp?)?.toDate();
             final bTime = (b['timestamp'] as Timestamp?)?.toDate();
@@ -46,12 +46,58 @@ class TeacherFeedbackPage extends StatelessWidget {
           return ListView.builder(
             itemCount: feedbacks.length,
             itemBuilder: (context, index) {
-              final data = feedbacks[index].data() as Map<String, dynamic>;
+              final doc = feedbacks[index];
+              final data = doc.data() as Map<String, dynamic>;
+
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
                   title: Text(data['studentName'] ?? "Unknown Student"),
                   subtitle: Text(data['feedback'] ?? ""),
+
+                  // ---------------- DELETE BUTTON ADDED ----------------
+                  leading: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text("Delete Feedback"),
+                          content: const Text(
+                            "Are you sure you want to delete this feedback?",
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancel"),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.pop(context);
+
+                                await FirebaseFirestore.instance
+                                    .collection('feedbacks')
+                                    .doc(doc.id)
+                                    .delete();
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Feedback deleted"),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                "Delete",
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
+                  //------------------------------------------------------
                   trailing: Text(
                     data['timestamp'] != null
                         ? (data['timestamp'] as Timestamp)
