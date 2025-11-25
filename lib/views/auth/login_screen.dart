@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/services/firebase_auth_service.dart';
-
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 
 
@@ -463,6 +464,14 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = false);
 
     if (user != null) {
+       String? token = await FirebaseMessaging.instance.getToken();
+
+       if (token != null) {
+         await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .update({"fcmToken": token});
+      }
       Get.offAllNamed('/checkRole');
     } else {
       Get.snackbar(
