@@ -4,6 +4,7 @@ import 'firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'core/services/notification_handler.dart';
 
 // ROUTES
 import 'views/admin/admin_dashboard.dart';
@@ -31,6 +32,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseMessaging.instance.requestPermission();
+  await NotificationHandler.init();
+  NotificationHandler.listenForeground();
+
   runApp(const MyApp());
 }
 
