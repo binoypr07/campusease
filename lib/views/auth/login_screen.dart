@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/services/firebase_auth_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -98,12 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      String userEmail = email.text
-                          .trim(); // <-- your existing email controller
+                    onTap: () async {
+                      String userEmail = email.text.trim();
 
                       if (userEmail.isEmpty) {
-                        // If email empty show warning popup
                         showDialog(
                           context: context,
                           builder: (_) => AlertDialog(
@@ -122,6 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         return;
                       }
 
+                      // MAIN POPUP WINDOW
                       showDialog(
                         context: context,
                         builder: (context) {
@@ -146,15 +144,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                         color: Colors.white,
                                       ),
                                     ),
-
                                     const SizedBox(height: 15),
-
-                                    // ---------------- SHOW USER EMAIL ----------------
-                                    Text(
+                                    const Text(
                                       "We will send an OTP to:",
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                      ),
+                                      style: TextStyle(color: Colors.white70),
                                     ),
                                     const SizedBox(height: 5),
                                     Text(
@@ -165,13 +158,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-
                                     const SizedBox(height: 25),
 
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
-                                        // CANCEL BUTTON
                                         TextButton(
                                           onPressed: () =>
                                               Navigator.pop(context),
@@ -182,7 +173,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ),
                                           ),
                                         ),
-
                                         const SizedBox(width: 10),
 
                                         // SEND OTP BUTTON
@@ -194,13 +184,32 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   BorderRadius.circular(8),
                                             ),
                                           ),
-                                          onPressed: () {
-                                            // TODO: send OTP to userEmail
-                                            Navigator.pop(
-                                              context,
-                                            ); // close previous popup
+                                          onPressed: () async {
+                                            Navigator.pop(context);
 
-                                            // Show OTP verification popup
+                                            // GENERATE 6 DIGIT OTP
+                                            String otp =
+                                                (Random().nextInt(900000) +
+                                                        100000)
+                                                    .toString();
+
+                                            // SAVE OTP IN FIRESTORE
+                                            await FirebaseFirestore.instance
+                                                .collection("otp_reset")
+                                                .doc(userEmail)
+                                                .set({
+                                                  "otp": otp,
+                                                  "timestamp": DateTime.now()
+                                                      .millisecondsSinceEpoch,
+                                                });
+
+                                            // SEND OTP USING FIREBASE AUTH EMAIL
+                                            await FirebaseAuth.instance
+                                                .sendPasswordResetEmail(
+                                                  email: userEmail,
+                                                );
+
+                                            // OTP POPUP
                                             showDialog(
                                               context: context,
                                               builder: (context) {
@@ -243,12 +252,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                                                   Colors.white,
                                                             ),
                                                           ),
-
                                                           const SizedBox(
                                                             height: 20,
                                                           ),
 
-                                                          // OTP TextField
                                                           TextField(
                                                             controller:
                                                                 otpController,
@@ -296,7 +303,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                                                 MainAxisAlignment
                                                                     .end,
                                                             children: [
-                                                              // CANCEL
                                                               TextButton(
                                                                 onPressed: () =>
                                                                     Navigator.pop(
@@ -310,12 +316,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                                                   ),
                                                                 ),
                                                               ),
-
                                                               const SizedBox(
                                                                 width: 10,
                                                               ),
 
-                                                              // VERIFY OTP BUTTON
                                                               ElevatedButton(
                                                                 style: ElevatedButton.styleFrom(
                                                                   backgroundColor:
@@ -328,17 +332,82 @@ class _LoginScreenState extends State<LoginScreen> {
                                                                         ),
                                                                   ),
                                                                 ),
-                                                                onPressed: () {
-                                                                  String otp =
+                                                                onPressed: () async {
+                                                                  String
+                                                                  enteredOtp =
                                                                       otpController
                                                                           .text
                                                                           .trim();
 
-                                                                  // TODO: verify OTP logic here
+                                                                  // READ OTP FROM FIRESTORE
+                                                                  var data = await FirebaseFirestore
+                                                                      .instance
+                                                                      .collection(
+                                                                        "otp_reset",
+                                                                      )
+                                                                      .doc(
+                                                                        userEmail,
+                                                                      )
+                                                                      .get();
 
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  );
+                                                                  String
+                                                                  correctOtp =
+                                                                      data["otp"];
+
+                                                                  if (enteredOtp ==
+                                                                      correctOtp) {
+                                                                    Navigator.pop(
+                                                                      context,
+                                                                    );
+
+                                                                    showDialog(
+                                                                      context:
+                                                                          context,
+                                                                      builder: (_) => AlertDialog(
+                                                                        title: const Text(
+                                                                          "OTP Verified",
+                                                                        ),
+                                                                        content:
+                                                                            const Text(
+                                                                              "OTP verified successfully. You can now reset your password using the email link.",
+                                                                            ),
+                                                                        actions: [
+                                                                          TextButton(
+                                                                            onPressed: () => Navigator.pop(
+                                                                              context,
+                                                                            ),
+                                                                            child: const Text(
+                                                                              "OK",
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    );
+                                                                  } else {
+                                                                    showDialog(
+                                                                      context:
+                                                                          context,
+                                                                      builder: (_) => AlertDialog(
+                                                                        title: const Text(
+                                                                          "Error",
+                                                                        ),
+                                                                        content:
+                                                                            const Text(
+                                                                              "Invalid OTP. Please try again.",
+                                                                            ),
+                                                                        actions: [
+                                                                          TextButton(
+                                                                            onPressed: () => Navigator.pop(
+                                                                              context,
+                                                                            ),
+                                                                            child: const Text(
+                                                                              "OK",
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    );
+                                                                  }
                                                                 },
                                                                 child: const Text(
                                                                   "Verify OTP",
@@ -379,18 +448,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color.fromARGB(
-                              255,
-                              218,
-                              216,
-                              220,
-                            ).withOpacity(0.0),
-                            offset: const Offset(0, 3),
-                            blurRadius: 6,
-                          ),
-                        ],
                       ),
                       child: const Text(
                         "Forgot Password?",
@@ -464,13 +521,13 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = false);
 
     if (user != null) {
-       String? token = await FirebaseMessaging.instance.getToken();
+      String? token = await FirebaseMessaging.instance.getToken();
 
-       if (token != null) {
-         await FirebaseFirestore.instance
-        .collection("users")
-        .doc(user.uid)
-        .update({"fcmToken": token});
+      if (token != null) {
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .update({"fcmToken": token});
       }
       Get.offAllNamed('/checkRole');
     } else {
