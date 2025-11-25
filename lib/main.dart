@@ -34,6 +34,18 @@ void main() async {
   await FirebaseMessaging.instance.requestPermission();
   await NotificationHandler.init();
   NotificationHandler.listenForeground();
+  FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
+  print("Foreground Notification: ${msg.notification?.title}");
+
+  // Show simple popup
+  Get.snackbar(
+    msg.notification?.title ?? "Notification",
+    msg.notification?.body ?? "",
+    backgroundColor: Colors.black,
+    colorText: Colors.white,
+  );
+});
+
 
   runApp(const MyApp());
 }
