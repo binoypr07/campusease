@@ -16,7 +16,7 @@ android {
     ndkVersion = flutter.ndkVersion
     signingConfigs {
       create("release") {
-        val props = java.util.Properties()
+        val props = val props = Properties()
         props.load(file("release-key.properties").inputStream())
 
         storeFile = file(props.getProperty("storeFile"))
