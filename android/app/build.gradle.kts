@@ -12,6 +12,18 @@ android {
     namespace = "com.example.campusease"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    signingConfigs {
+      create("release") {
+        val props = java.util.Properties()
+        props.load(file("release-key.properties").inputStream())
+
+        storeFile = file(props.getProperty("storeFile"))
+        storePassword = props.getProperty("storePassword")
+        keyAlias = props.getProperty("keyAlias")
+        keyPassword = props.getProperty("keyPassword")
+      }
+    }
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -36,9 +48,9 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
