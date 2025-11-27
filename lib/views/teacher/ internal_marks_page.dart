@@ -219,7 +219,7 @@ class _InternalMarksPageState extends State<InternalMarksPage> {
                             labelText: 'Select Student',
                             border: OutlineInputBorder(),
                           ),
-                          value: selectedStudentId,
+                          initialValue: selectedStudentId,
                           items: students.map((s) {
                             return DropdownMenuItem<String>(
                               value: s['id'],

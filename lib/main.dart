@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/services/notification_handler.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 // ROUTES
 import 'views/admin/admin_dashboard.dart';

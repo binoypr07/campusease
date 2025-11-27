@@ -13,7 +13,7 @@ class StudentInternalMarks extends StatelessWidget {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
-    Future<void> _generatePdf(
+    Future<void> generatePdf(
       Map<String, dynamic> data,
       String studentName,
     ) async {
@@ -137,13 +137,15 @@ class StudentInternalMarks extends StatelessWidget {
             .doc(uid)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
           final data = snapshot.data!.data() as Map<String, dynamic>?;
 
-          if (data == null || data.isEmpty)
+          if (data == null || data.isEmpty) {
             return const Center(child: Text("No marks found"));
+          }
 
           final subjects = data.entries.map((e) {
             return {"name": e.key, "mark": e.value};
@@ -281,7 +283,7 @@ class StudentInternalMarks extends StatelessWidget {
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.picture_as_pdf),
                         label: const Text("Download PDF"),
-                        onPressed: () => _generatePdf(data, studentName),
+                        onPressed: () => generatePdf(data, studentName),
                       ),
                     ),
                   ],
