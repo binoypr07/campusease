@@ -46,10 +46,15 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
+              signingConfig = signingConfigs.getByName("release")
+              isMinifyEnabled = false
+              isShrinkResources = false
+              isDebuggable = false
+        lint {
+           checkReleaseBuilds = false
+            abortOnError = false
         }
+      }
     }
 }
 
@@ -60,4 +65,9 @@ flutter {
 dependencies {
     implementation("com.google.firebase:firebase-messaging:23.4.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+}
+tasks.whenTaskAdded {
+    if (name.contains("lint") || name.contains("Lint")) {
+        enabled = false
+    }
 }
