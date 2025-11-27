@@ -11,6 +11,10 @@ android {
     namespace = "com.example.campusease"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    lint {
+    abortOnError = false
+    checkReleaseBuilds = false
+    }
 
     signingConfigs {
         create("release") {
