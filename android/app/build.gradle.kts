@@ -11,11 +11,8 @@ android {
     namespace = "com.example.campusease"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
-    lint {
-    abortOnError = false
-    checkReleaseBuilds = false
-    }
 
+    // SIGNING CONFIG
     signingConfigs {
         create("release") {
             val props = Properties()
@@ -34,6 +31,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     compileOptions {
