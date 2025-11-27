@@ -31,8 +31,3 @@ include(":app")
 // ------------------------------------------------------
 // ✔ Add this block at the END (Do not touch your code)
 // ------------------------------------------------------
-gradle.beforeProject {
-    layout.buildDirectory.set(
-        layout.projectDirectory.dir("../build/${project.name}")
-    )
-}
