@@ -9,10 +9,8 @@ plugins {
 
 android {
     namespace = "com.example.campusease"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 34
 
-    // SIGNING CONFIG
     signingConfigs {
         create("release") {
             val props = Properties()
@@ -27,34 +25,22 @@ android {
 
     defaultConfig {
         applicationId = "com.example.campusease"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 21
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        multiDexEnabled = true
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
-    }
-
-    kotlinOptions {
-        jvmTarget = "11"
     }
 
     buildTypes {
         release {
-              signingConfig = signingConfigs.getByName("release")
-              isMinifyEnabled = false
-              isShrinkResources = false
-              isDebuggable = false
-        lint {
-           checkReleaseBuilds = false
-            abortOnError = false
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
-      }
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
     }
 }
 
@@ -65,9 +51,4 @@ flutter {
 dependencies {
     implementation("com.google.firebase:firebase-messaging:23.4.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-}
-tasks.whenTaskAdded {
-    if (name.contains("lint") || name.contains("Lint")) {
-        enabled = false
-    }
 }
