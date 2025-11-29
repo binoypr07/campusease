@@ -8,37 +8,30 @@ plugins {
 }
 
 android {
-    namespace = "com.example.campusease"
+    namespace = "com.campusease.app"
     compileSdk = 34
     ndkVersion = "26.1.10909125"
 
-    signingConfigs {
-        create("release") {
-            val props = Properties()
-            props.load(file("release-key.properties").inputStream())
-
-            storeFile = file(props["storeFile"]!!)
-            storePassword = props["storePassword"].toString()
-            keyAlias = props["keyAlias"].toString()
-            keyPassword = props["keyPassword"].toString()
-        }
-    }
-
+   
     defaultConfig {
-        applicationId = "com.example.campusease"
+        applicationId = "com.campusease.app"
         minSdk = flutter.minSdkVersion
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
-
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
-        }
+   buildTypes {
+    release {
+        signingConfig = signingConfigs.getByName("debug")
+        isMinifyEnabled = false
+        isShrinkResources = false
     }
+    debug {
+        isMinifyEnabled = false
+        isShrinkResources = false
+    }
+}
+
 
     compileOptions {
     sourceCompatibility = JavaVersion.VERSION_1_8
