@@ -40,8 +40,14 @@ android {
         }
     }
 
+    // 🔥 FIX JVM MISMATCH ERROR
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "1.8"
     }
 }
 
