@@ -3,14 +3,13 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
-    id("org.jetbrains.kotlin.android") version "2.1.0"
+    id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.example.campusease"
     compileSdk = 34
-    ndkVersion = "26.1.10909125"
 
     signingConfigs {
         create("release") {
@@ -26,10 +25,10 @@ android {
 
     defaultConfig {
         applicationId = "com.example.campusease"
-        minSdk = flutter.minSdkVersion
+        minSdk = 21
         targetSdk = 34
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 1
+        versionName = "1.0"
     }
 
     buildTypes {
@@ -41,15 +40,13 @@ android {
     }
 
     compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-    isCoreLibraryDesugaringEnabled = true
-}
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
 
-kotlinOptions {
-    jvmTarget = "11"
-}
-
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 flutter {
