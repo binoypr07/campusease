@@ -25,7 +25,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.campusease"
-        minSdk = 21
+        minSdk = flutter.minSdkVersion
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -38,10 +38,10 @@ android {
             isShrinkResources = false
         }
     }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
