@@ -9,13 +9,6 @@ android {
     namespace = "com.campusease.app"
     compileSdk = flutter.compileSdkVersion
 
-    // ✔ Add signing configs so "debug" exists
-    signingConfigs {
-        debug {
-            // uses default debug keystore
-        }
-    }
-
     defaultConfig {
         applicationId = "com.campusease.app"
         minSdk = flutter.minSdkVersion
@@ -27,6 +20,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -34,13 +28,12 @@ android {
     }
 
     buildTypes {
-        release {
-            // Temporary: sign release with debug keystore (works for your phone)
-            signingConfig = signingConfigs.getByName("debug")
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("debug") // use default debug
             isMinifyEnabled = false
             isShrinkResources = false
         }
-        debug {
+        getByName("debug") {
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false
@@ -53,4 +46,6 @@ flutter {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    implementation("com.google.firebase:firebase-messaging:23.4.1")
 }

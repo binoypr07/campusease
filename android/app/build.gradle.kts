@@ -10,9 +10,9 @@ plugins {
 android {
     namespace = "com.campusease.app"
     compileSdk = 34
-    ndkVersion = "26.1.10909125"
+    
+    
 
-   
     defaultConfig {
         applicationId = "com.campusease.app"
         minSdk = flutter.minSdkVersion
@@ -20,29 +20,28 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
-   buildTypes {
-    release {
-        signingConfig = signingConfigs.getByName("debug")
-        isMinifyEnabled = false
-        isShrinkResources = false
-    }
-    debug {
-        isMinifyEnabled = false
-        isShrinkResources = false
-    }
-}
 
+    buildTypes {
+        release {
+          
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+    }
 
     compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-    isCoreLibraryDesugaringEnabled = true
-}
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
+    }
 
-kotlinOptions {
-    jvmTarget = "1.8"
-}
-
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
 }
 
 flutter {
