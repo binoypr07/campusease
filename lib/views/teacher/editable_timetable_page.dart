@@ -89,26 +89,44 @@ class _EditableTimetablePageState extends State<EditableTimetablePage> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Edit Entry"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: subjectController,
-              decoration: const InputDecoration(labelText: 'Subject'),
-            ),
-            TextField(
-              controller: timeController,
-              decoration: const InputDecoration(labelText: 'Time'),
-            ),
-            TextField(
-              controller: teacherController,
-              decoration: const InputDecoration(labelText: 'Teacher'),
-            ),
-            TextField(
-              controller: roomController,
-              decoration: const InputDecoration(labelText: 'Room'),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: subjectController,
+                decoration: const InputDecoration(
+                  labelText: 'Subject',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: timeController,
+                decoration: const InputDecoration(
+                  labelText: 'Time',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: teacherController,
+                decoration: const InputDecoration(
+                  labelText: 'Teacher',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: roomController,
+                decoration: const InputDecoration(
+                  labelText: 'Room',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -144,16 +162,62 @@ class _EditableTimetablePageState extends State<EditableTimetablePage> {
       appBar: AppBar(
         title: Text("Edit Timetable - ${widget.className}"),
         actions: [
-          IconButton(onPressed: saveTimetable, icon: const Icon(Icons.save)),
+          IconButton(
+            tooltip: "Save",
+            onPressed: saveTimetable,
+            icon: const Icon(Icons.cloud_upload),
+          ),
         ],
       ),
       body: ListView.builder(
         itemCount: entries.length,
         itemBuilder: (context, index) {
           final entry = entries[index];
-          return GestureDetector(
-            onTap: () => editEntry(index),
-            child: TimetableCardWidget(entry: entry),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => editEntry(index),
+                    child: TimetableCardWidget(entry: entry),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.redAccent),
+                  tooltip: 'Delete Entry',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text("Delete Entry"),
+                        content: const Text(
+                          "Are you sure you want to delete this entry?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                entries.removeAt(index);
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: const Text("Delete"),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           );
         },
       ),

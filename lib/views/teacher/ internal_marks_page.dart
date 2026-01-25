@@ -234,11 +234,6 @@ class _InternalMarksPageState extends State<InternalMarksPage> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      IconButton(
-                        tooltip: 'Reload students',
-                        icon: const Icon(Icons.refresh, color: Colors.white),
-                        onPressed: _loadStudents,
-                      ),
                     ],
                   ),
 

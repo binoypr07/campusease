@@ -1,3 +1,5 @@
+import 'package:campusease/views/student/global_chat_screen.dart';
+import 'package:campusease/views/student/library_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -79,21 +81,38 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Teacher Dashboard"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Teacher Dashboard"),
+        centerTitle: true,
+        actions: [
+          //AI
+          IconButton(
+            iconSize: 28,
+            tooltip: "Smart AI Assist",
+            icon: const Icon(
+              Icons.auto_awesome,
+              color: Color.fromARGB(255, 89, 64, 251),
+            ),
+            onPressed: () {
+              Get.to(() => const LibraryPage());
+            },
+          ),
+          IconButton(
+            iconSize: 28,
+            tooltip: "My profile",
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Get.toNamed('/teacherProfile');
+            },
+          ),
+        ],
+      ),
 
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
             const SizedBox(height: 10),
-
-            // PROFILE
-            buildCard(
-              icon: Icons.person,
-              title: "My Profile",
-              subtitle: "View your details",
-              onTap: () => Get.toNamed('/teacherProfile'),
-            ),
 
             // APPROVE STUDENTS
             buildCard(
@@ -267,13 +286,28 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 );
               },
             ),
-            const SizedBox(height: 20),
-
-            // LOGOUT
-            ElevatedButton(
-              onPressed: () => Get.offAllNamed('/login'),
-              child: const Text("Logout"),
+            // ------------------ CLASS CHAT ------------------
+            buildCard(
+              icon: Icons.chat_bubble_outline,
+              title: "Class Chat",
+              subtitle: assignedClass == null || assignedClass!.isEmpty
+                  ? "Assign class first"
+                  : "Chat with your students",
+              onTap: () {
+                if (assignedClass == null || assignedClass!.isEmpty) {
+                  Get.snackbar(
+                    "Class Not Assigned",
+                    "Please assign a class first!",
+                    backgroundColor: Colors.black,
+                    colorText: Colors.white,
+                  );
+                  return;
+                }
+                // Navigate to GlobalChatScreen with classId
+                Get.to(() => GlobalChatScreen(classId: assignedClass!));
+              },
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),

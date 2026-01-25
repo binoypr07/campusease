@@ -1,4 +1,4 @@
-package com.example.campusease
+package com.campusease.app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

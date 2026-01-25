@@ -27,16 +27,17 @@ import 'views/teacher/teacher_announcements.dart';
 import 'views/student/student_announcements.dart';
 import 'views/admin/admin_students_list.dart';
 import 'views/admin/admin_teacher_list.dart';
+import 'views/admin/admin_attendance_screen.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print(" Background Notification: ${message.notification?.title}");
+  print("Background Notification: ${message.notification?.title}");
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Ask Notification Permission
+
   await FirebaseMessaging.instance.requestPermission();
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -45,14 +46,15 @@ void main() async {
   NotificationHandler.listenForeground();
 
   FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
-    print("Foreground Notification: ${msg.notification?.title}");
-
-    Get.snackbar(
-      msg.notification?.title ?? "Notification",
-      msg.notification?.body ?? "",
-      backgroundColor: Colors.black,
-      colorText: Colors.white,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.snackbar(
+        msg.notification?.title ?? "Notification",
+        msg.notification?.body ?? "",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.black,
+        colorText: Colors.white,
+      );
+    });
   });
 
   runApp(const MyApp());
@@ -123,41 +125,72 @@ class MyApp extends StatelessWidget {
             side: const BorderSide(color: Colors.white, width: 1.4),
           ),
         ),
+
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
 
-      // ---------------------------------------------------
-      //                 GETX ROUTES (ONLY)
-      // ---------------------------------------------------
       getPages: [
-
         GetPage(name: '/login', page: () => const LoginScreen()),
         GetPage(name: '/checkRole', page: () => const CheckRole()),
 
-        // AUTH
         GetPage(name: '/registerStudent', page: () => const RegisterStudent()),
         GetPage(name: '/registerTeacher', page: () => const RegisterTeacher()),
 
-        // ADMIN
         GetPage(name: '/adminDashboard', page: () => const AdminDashboard()),
         GetPage(name: '/pendingUsers', page: () => const PendingUsersScreen()),
-        GetPage(name: '/adminAnnouncements', page: () => const AdminAnnouncementsScreen()),
-        GetPage(name: '/adminTeachers', page: () => const AdminAllTeachersScreen()),
-        GetPage(name: '/adminStudents', page: () => const AdminAllStudentsScreen()),
+        GetPage(
+          name: '/adminAnnouncements',
+          page: () => const AdminAnnouncementsScreen(),
+        ),
+        GetPage(
+          name: '/adminTeachers',
+          page: () => const AdminAllTeachersScreen(),
+        ),
+        GetPage(
+          name: '/adminStudents',
+          page: () => const AdminAllStudentsScreen(),
+        ),
 
-        // TEACHER
-        GetPage(name: '/teacherDashboard', page: () => const TeacherDashboard()),
+        GetPage(
+          name: '/teacherDashboard',
+          page: () => const TeacherDashboard(),
+        ),
         GetPage(name: '/assignClass', page: () => const AssignClassScreen()),
         GetPage(name: '/attendance', page: () => const AttendanceScreen()),
-        GetPage(name: '/teacherProfile', page: () => const TeacherProfileScreen()),
-        GetPage(name: '/approveStudents', page: () => const TeacherApproveStudents()),
-        GetPage(name: '/teacherAnnouncements', page: () => const TeacherAnnouncementsScreen()),
+        GetPage(
+          name: '/teacherProfile',
+          page: () => const TeacherProfileScreen(),
+        ),
+        GetPage(
+          name: '/approveStudents',
+          page: () => const TeacherApproveStudents(),
+        ),
+        GetPage(
+          name: '/teacherAnnouncements',
+          page: () => const TeacherAnnouncementsScreen(),
+        ),
 
-        // STUDENT
-        GetPage(name: '/studentDashboard', page: () => const StudentDashboard()),
-        GetPage(name: '/studentProfile', page: () => const StudentProfileScreen()),
-        GetPage(name: '/studentAttendance', page: () => const StudentAttendanceScreen()),
+        GetPage(
+          name: '/studentDashboard',
+          page: () => const StudentDashboard(),
+        ),
+        GetPage(
+          name: '/studentProfile',
+          page: () => const StudentProfileScreen(),
+        ),
+        GetPage(
+          name: '/studentAttendance',
+          page: () => StudentAttendanceScreen(),
+        ),
         GetPage(name: '/studentInfo', page: () => const StudentInfoPage()),
-        GetPage(name: '/studentAnnouncements', page: () => const StudentAnnouncementsScreen()),
+        GetPage(
+          name: '/studentAnnouncements',
+          page: () => const StudentAnnouncementsScreen(),
+        ),
+        GetPage(
+          name: '/adminAttendance',
+          page: () => const AdminAttendanceScreen(),
+        ),
       ],
 
       home: FirebaseAuth.instance.currentUser == null

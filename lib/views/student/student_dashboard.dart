@@ -1,3 +1,4 @@
+import 'package:campusease/views/student/global_chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,9 +8,42 @@ import 'timetable_page.dart';
 import 'feedback_page.dart';
 import 'polls_page.dart';
 import 'student_internal_marks.dart';
+import 'library_page.dart';
 
-class StudentDashboard extends StatelessWidget {
+class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
+
+  @override
+  State<StudentDashboard> createState() => _StudentDashboardState();
+}
+
+class _StudentDashboardState extends State<StudentDashboard>
+    with TickerProviderStateMixin {
+  // Animation variables
+  late AnimationController _notifController;
+  late Animation<double> _notifAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize the bouncy animation
+    _notifController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _notifAnimation = CurvedAnimation(
+      parent: _notifController,
+      curve: Curves.elasticOut, // This gives it the "Pop" effect
+    );
+  }
+
+  @override
+  void dispose() {
+    _notifController.dispose();
+    super.dispose();
+  }
 
   // ---------------------------------------------------------
   // REUSABLE CARD WIDGET
@@ -42,9 +76,6 @@ class StudentDashboard extends StatelessWidget {
     );
   }
 
-  // ---------------------------------------------------------
-  // UI
-  // ---------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -79,53 +110,112 @@ class StudentDashboard extends StatelessWidget {
         final studentDepartment = data['department'] ?? 'No Department';
         final studentClass = data['classYear'] ?? '';
         final studentSemester = data['semester'] ?? 1;
-
-        // -------------------- FIX HERE --------------------
-        final assignedClass =
-            data['classYear'] ??
-            ''; // <-- use classYear instead of assignedClass
-        print("DEBUG: assignedClass after toString → $assignedClass");
-        print("DEBUG: full student data → $data");
-        // -------------------------------------------------
+        final assignedClass = data['classYear'] ?? '';
 
         return Scaffold(
           appBar: AppBar(
             title: const Text("Student Dashboard"),
             centerTitle: true,
+            actions: [
+              // AI Assistant
+              IconButton(
+                iconSize: 28,
+                tooltip: "Smart AI Assist",
+                icon: const Icon(
+                  Icons.auto_awesome,
+                  color: Colors.purpleAccent,
+                ),
+                onPressed: () => Get.to(() => const LibraryPage()),
+              ),
+
+              // REAL-TIME ANIMATED ANNOUNCEMENTS
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('announcements')
+                    .orderBy('timestamp', descending: true)
+                    .limit(1)
+                    .snapshots(),
+                builder: (context, notifSnapshot) {
+                  bool showRedDot = false;
+
+                  if (notifSnapshot.hasData &&
+                      notifSnapshot.data!.docs.isNotEmpty) {
+                    DateTime lastTime =
+                        (notifSnapshot.data!.docs.first['timestamp']
+                                as Timestamp)
+                            .toDate();
+
+                    // Logic: If post is newer than 24 hours, show animated dot
+                    if (DateTime.now().difference(lastTime).inHours < 24) {
+                      showRedDot = true;
+                      _notifController.forward(); // Start Pop Animation
+                    } else {
+                      _notifController.reverse(); // Hide Dot
+                    }
+                  }
+
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        iconSize: 28,
+                        icon: Icon(
+                          showRedDot
+                              ? Icons.notifications_active
+                              : Icons.notifications_none,
+                        ),
+                        tooltip: 'Announcements',
+                        onPressed: () => Get.toNamed('/studentAnnouncements'),
+                      ),
+                      Positioned(
+                        right: 12,
+                        top: 12,
+                        child: ScaleTransition(
+                          scale: _notifAnimation,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: Colors.redAccent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+
+              // Profile Icon
+              IconButton(
+                iconSize: 28,
+                icon: const Icon(Icons.person_outline),
+                tooltip: 'My Profile',
+                onPressed: () => Get.toNamed('/studentProfile'),
+              ),
+            ],
           ),
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: ListView(
               children: [
                 const SizedBox(height: 10),
-
-                // ------------------ PROFILE ------------------
-                buildCard(
-                  icon: Icons.person,
-                  title: "My Profile",
-                  subtitle: "View personal details",
-                  onTap: () => Get.toNamed('/studentProfile'),
-                ),
-
-                // ------------------ ATTENDANCE ------------------
                 buildCard(
                   icon: Icons.calendar_month,
                   title: "Attendance",
                   subtitle: "View your attendance",
                   onTap: () => Get.toNamed('/studentAttendance'),
                 ),
-
-                // ------------------ INTERNAL MARKS ------------------
                 buildCard(
                   icon: Icons.grade,
                   title: "Internal Marks",
                   subtitle: "View your marks",
                   onTap: () {
-                    final assignedClass = data['classYear'] ?? '';
                     if (assignedClass.isEmpty) {
                       Get.snackbar(
-                        "Class Not Assigned",
-                        "Your class is not assigned yet",
+                        "Error",
+                        "Class not assigned",
                         backgroundColor: Colors.black,
                         colorText: Colors.white,
                       );
@@ -140,25 +230,20 @@ class StudentDashboard extends StatelessWidget {
                     );
                   },
                 ),
-
-                // ------------------ Time Table------------------
                 buildCard(
                   icon: Icons.schedule,
                   title: "Time Table",
                   subtitle: "View your daily schedule",
                   onTap: () {
-                    print("DEBUG: assignedClass = $assignedClass");
-
                     if (assignedClass.isEmpty) {
                       Get.snackbar(
-                        "Class Not Assigned",
-                        "Your class is not assigned yet",
+                        "Error",
+                        "Class not assigned",
                         backgroundColor: Colors.black,
                         colorText: Colors.white,
                       );
                       return;
                     }
-
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -168,16 +253,6 @@ class StudentDashboard extends StatelessWidget {
                     );
                   },
                 ),
-
-                // ------------------ ANNOUNCEMENTS ------------------
-                buildCard(
-                  icon: Icons.notifications,
-                  title: "Announcements",
-                  subtitle: "Notices from teachers & admin",
-                  onTap: () => Get.toNamed('/studentAnnouncements'),
-                ),
-
-                // ------------------ QR CODE ------------------
                 buildCard(
                   icon: Icons.qr_code,
                   title: "My QR Code",
@@ -195,45 +270,51 @@ class StudentDashboard extends StatelessWidget {
                     );
                   },
                 ),
-                // ------------------ FEEDBACK ------------------
-                buildCard(
-                  icon: Icons.feedback,
-                  title: "Feedback",
-                  subtitle: "Send feedback to teachers/admin",
-                  onTap: () {
-                    Get.to(
-                      () => FeedbackPage(
-                        studentId: studentId,
-                        studentName: studentName,
-                        classYear: studentClass,
-                      ),
-                    );
-                  },
-                ),
-
-                // ------------------ POLL ------------------
                 buildCard(
                   icon: Icons.poll,
                   title: "Polls",
                   subtitle: "Participate in active polls",
+                  onTap: () => Get.to(
+                    () => PollsPage(
+                      studentId: studentId,
+                      classYear: studentClass,
+                    ),
+                  ),
+                ),
+                buildCard(
+                  icon: Icons.feedback,
+                  title: "Feedback",
+                  subtitle: "Send feedback to teachers/admin",
+                  onTap: () => Get.to(
+                    () => FeedbackPage(
+                      studentId: studentId,
+                      studentName: studentName,
+                      classYear: studentClass,
+                    ),
+                  ),
+                ),
+                // ------------------ CLASS CHAT ------------------
+                buildCard(
+                  icon: Icons.chat_bubble_outline,
+                  title: "Class Chat",
+                  subtitle: assignedClass == null || assignedClass!.isEmpty
+                      ? "Assign class first"
+                      : "Chat with your class",
                   onTap: () {
-                    Get.to(
-                      () => PollsPage(
-                        studentId: studentId,
-                        classYear: studentClass,
-                      ),
-                    );
+                    if (assignedClass == null || assignedClass!.isEmpty) {
+                      Get.snackbar(
+                        "Class Not Assigned",
+                        "Please assign a class first!",
+                        backgroundColor: Colors.black,
+                        colorText: Colors.white,
+                      );
+                      return;
+                    }
+                    // Navigate to GlobalChatScreen with classId
+                    Get.to(() => GlobalChatScreen(classId: assignedClass!));
                   },
                 ),
                 const SizedBox(height: 20),
-
-                // ------------------ LOGOUT ------------------
-                ElevatedButton(
-                  onPressed: () {
-                    Get.offAllNamed('/login');
-                  },
-                  child: const Text("Logout"),
-                ),
               ],
             ),
           ),

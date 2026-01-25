@@ -4,6 +4,7 @@ import '../../core/services/firebase_auth_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math' as math;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,7 +13,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   TextEditingController email = TextEditingController();
   TextEditingController password = TextEditingController();
   FirebaseAuthService authService = FirebaseAuthService();
@@ -20,37 +22,116 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool showPassword = false;
 
+  late AnimationController _mainController;
+
+  @override
+  void initState() {
+    super.initState();
+    _mainController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(); // animation controller still needed for text wave
+  }
+
+  @override
+  void dispose() {
+    _mainController.dispose();
+    email.dispose();
+    password.dispose();
+    super.dispose();
+  }
+
+  /// TITLE ANIMATION (UNCHANGED)
+  Widget staggeredText(String text, double fontSize) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: text.split('').asMap().entries.map((entry) {
+        int index = entry.key;
+        String char = entry.value;
+
+        return AnimatedBuilder(
+          animation: _mainController,
+          builder: (context, child) {
+            double waveValue = 0.0;
+            if (_mainController.isAnimating) {
+              waveValue = Curves.easeInOut.transform(
+                ((_mainController.value - (index * 0.08)) % 1.0).clamp(
+                  0.0,
+                  1.0,
+                ),
+              );
+            }
+            double yOffset =
+                Curves.easeInOut.transform(
+                  (0.5 - (0.5 - waveValue).abs()) * 2,
+                ) *
+                -12;
+
+            Color dynamicColor = HSVColor.fromAHSV(
+              1.0,
+              (_mainController.value * 360 + (index * 20)) % 360,
+              0.4,
+              0.9,
+            ).toColor();
+
+            return Transform.translate(
+              offset: Offset(0, yOffset),
+              child: Text(
+                char,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                  color: dynamicColor,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 10,
+                      color: dynamicColor.withOpacity(0.5),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-
+      backgroundColor: Colors.black, // static black background
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ---------------------------- APP TITLE ----------------------------
-              Text(
-                "CampusEase",
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1,
-                  color: Colors.white,
-                ),
-              ),
+              staggeredText("CampusEase", 40),
               const SizedBox(height: 8),
 
-              const Text(
-                "Login to Continue",
-                style: TextStyle(fontSize: 16, color: Colors.white70),
+              AnimatedBuilder(
+                animation: _mainController,
+                builder: (context, child) {
+                  double opacityValue =
+                      (math.sin(_mainController.value * math.pi * 5) + 1) / 2;
+                  return Opacity(
+                    opacity: 0.3 + (opacityValue * 0.7),
+                    child: const Text(
+                      "Login to Continue",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 45),
 
-              // ---------------------------- EMAIL ----------------------------
               TextField(
                 controller: email,
                 style: const TextStyle(color: Colors.white),
@@ -62,7 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // ---------------------------- PASSWORD ----------------------------
               TextField(
                 controller: password,
                 obscureText: !showPassword,
@@ -85,139 +165,34 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               const SizedBox(height: 40),
-              // ---------------------------- FORGOT PASSWORD ----------------------------
+
               Align(
                 alignment: Alignment.centerRight,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
                   onTap: () async {
                     String userEmail = email.text.trim();
-
                     if (userEmail.isEmpty) {
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text("Email Required"),
-                          content: const Text("Please enter your email first."),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("OK"),
-                            ),
-                          ],
-                        ),
-                      );
+                      _showErrorDialog("Email Required", "Enter email.");
                       return;
                     }
-
-                    // Popup to confirm email
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          title: const Text(
-                            "Reset Password",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          content: Text(
-                            "A reset link will be sent to:\n\n$userEmail",
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text(
-                                "Cancel",
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                Navigator.pop(context);
-
-                                try {
-                                  // SEND FIREBASE RESET MAIL
-                                  await FirebaseAuth.instance
-                                      .sendPasswordResetEmail(email: userEmail);
-
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) => AlertDialog(
-                                      title: const Text("Email Sent"),
-                                      content: const Text(
-                                        "A password reset link has been sent to your email.",
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: const Text("OK"),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                } catch (e) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) => AlertDialog(
-                                      title: const Text("Error"),
-                                      content: Text(
-                                        "Failed to send reset link:\n$e",
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: const Text("OK"),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }
-                              },
-                              child: const Text(
-                                "Send Link",
-                                style: TextStyle(color: Colors.blue),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
+                    _showResetDialog(userEmail);
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color.fromARGB(255, 5, 5, 5),
-                          Color.fromARGB(255, 8, 8, 8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      "Forgot Password?",
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 247, 129, 129),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                  child: const Text(
+                    "Forgot Password?",
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 247, 129, 129),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
+
               const SizedBox(height: 40),
-              // ---------------------------- LOGIN BUTTON ----------------------------
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: isLoading ? null : loginUser,
+                  onPressed: isLoading ? null : () async => loginUser(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -240,7 +215,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 25),
 
-              // ---------------------------- REGISTER OPTIONS ----------------------------
               TextButton(
                 onPressed: () => Get.toNamed('/registerStudent'),
                 child: const Text(
@@ -248,7 +222,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(color: Colors.white),
                 ),
               ),
-
               TextButton(
                 onPressed: () => Get.toNamed('/registerTeacher'),
                 child: const Text(
@@ -263,31 +236,92 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ---------------------------- LOGIN FUNCTION ----------------------------
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResetDialog(String userEmail) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Reset Password"),
+        content: Text("Send link to $userEmail?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await FirebaseAuth.instance.sendPasswordResetEmail(
+                email: userEmail,
+              );
+              Get.snackbar("Success", "Reset link sent!");
+            },
+            child: const Text("Send"),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> loginUser() async {
+    if (email.text.trim().isEmpty || password.text.trim().isEmpty) {
+      Get.snackbar(
+        "Missing Fields",
+        "Enter email and password",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
     setState(() => isLoading = true);
+    try {
+      final user = await authService.login(
+        email.text.trim(),
+        password.text.trim(),
+      );
+      if (user == null) {
+        Get.snackbar(
+          "Login Failed",
+          "Invalid credentials",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
 
-    var user = await authService.login(email.text.trim(), password.text.trim());
-
-    setState(() => isLoading = false);
-
-    if (user != null) {
-      String? token = await FirebaseMessaging.instance.getToken();
-
+      final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
         await FirebaseFirestore.instance
             .collection("users")
             .doc(user.uid)
             .update({"fcmToken": token});
       }
+
       Get.offAllNamed('/checkRole');
-    } else {
+    } catch (e) {
       Get.snackbar(
-        "Login Failed",
-        "Invalid credentials or account not approved",
-        backgroundColor: Colors.black,
+        "Login Error",
+        e.toString(),
+        backgroundColor: Colors.red,
         colorText: Colors.white,
       );
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 }

@@ -23,19 +23,20 @@ class _TeacherAnnouncementsScreenState
   @override
   void initState() {
     super.initState();
-    load();
+    _loadTeacherData();
   }
 
-  Future<void> load() async {
-    var doc = await _db.collection("users").doc(uid).get();
-    teacherDept = doc["department"];
-    teacherClass = doc["assignedClass"];
+  Future<void> _loadTeacherData() async {
+    final doc = await _db.collection("users").doc(uid).get();
+    teacherDept = doc.data()?["department"];
+    teacherClass = doc.data()?["assignedClass"];
     setState(() => loading = false);
   }
 
-  Future<void> _create() async {
-    TextEditingController titleC = TextEditingController();
-    TextEditingController bodyC = TextEditingController();
+  // ---------------- CREATE ANNOUNCEMENT ----------------
+  Future<void> _createAnnouncement() async {
+    final titleC = TextEditingController();
+    final bodyC = TextEditingController();
 
     String targetType = "department";
     String targetValue = teacherDept ?? "";
@@ -44,72 +45,103 @@ class _TeacherAnnouncementsScreenState
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: Colors.black,
-        title: const Text("Create Announcement",
-            style: TextStyle(color: Colors.white)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
+        title: const Text(
+          "Create Announcement",
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
               controller: titleC,
               decoration: const InputDecoration(labelText: "Title"),
-              style: const TextStyle(color: Colors.white)),
-          TextField(
+              style: const TextStyle(color: Colors.white),
+            ),
+            const SizedBox(height: 10),
+            TextField(
               controller: bodyC,
               decoration: const InputDecoration(labelText: "Message"),
               maxLines: 4,
-              style: const TextStyle(color: Colors.white)),
-          DropdownButtonFormField(
-            dropdownColor: Colors.black,
-            initialValue: targetType,
-            items: [
-              DropdownMenuItem(
+              style: const TextStyle(color: Colors.white),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              dropdownColor: Colors.black,
+              value: targetType,
+              items: [
+                DropdownMenuItem(
                   value: "department",
-                  child: Text("Department ($teacherDept)")),
-              DropdownMenuItem(
-                  value: "class", child: Text("Class ($teacherClass)")),
-            ],
-            onChanged: (v) {
-              targetType = v!;
-              targetValue =
-                  v == "department" ? teacherDept! : teacherClass ?? "";
-            },
-          ),
-        ]),
+                  child: Text("Department ($teacherDept)"),
+                ),
+                DropdownMenuItem(
+                  value: "class",
+                  child: Text("Class ($teacherClass)"),
+                ),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                targetType = v;
+                targetValue = v == "department"
+                    ? teacherDept ?? ""
+                    : teacherClass ?? "";
+              },
+            ),
+          ],
+        ),
         actions: [
           TextButton(
-              onPressed: () => Get.back(),
-              child: const Text("Cancel", style: TextStyle(color: Colors.white))),
+            onPressed: () => Get.back(),
+            child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+          ),
           ElevatedButton(
-              onPressed: () async {
-                await _db.collection("announcements").add({
-                  "title": titleC.text.trim(),
-                  "body": bodyC.text.trim(),
-                  "createdByUid": uid,
-                  "createdAt": FieldValue.serverTimestamp(),
-                  "target": {"type": targetType, "value": targetValue},
-                });
-                Get.back();
-              },
-              child: const Text("Send"))
+            onPressed: () async {
+              await _db.collection("announcements").add({
+                "title": titleC.text.trim(),
+                "body": bodyC.text.trim(),
+                "createdByUid": uid,
+                "createdAt": FieldValue.serverTimestamp(),
+                "target": {"type": targetType, "value": targetValue},
+              });
+              Get.back();
+            },
+            child: const Text("Send"),
+          ),
         ],
       ),
     );
   }
 
-  bool _filter(Map<String, dynamic> doc) {
-    var t = doc["target"];
-    if (t["type"] == "all") return true;
-    if (t["type"] == "department" && t["value"] == teacherDept) return true;
-    if (t["type"] == "class" && t["value"] == teacherClass) return true;
-    if (doc["createdByUid"] == uid) return true;
+  // ---------------- DELETE ANNOUNCEMENT ----------------
+  Future<void> _deleteAnnouncement(String docId) async {
+    await _db.collection("announcements").doc(docId).delete();
+  }
+
+  // ---------------- FILTER LOGIC ----------------
+  bool _filterAnnouncement(Map<String, dynamic> data) {
+    final target = data["target"];
+    if (target == null) return false;
+
+    if (target["type"] == "all") return true;
+    if (target["type"] == "department" && target["value"] == teacherDept) {
+      return true;
+    }
+    if (target["type"] == "class" && target["value"] == teacherClass) {
+      return true;
+    }
+    if (data["createdByUid"] == uid) return true;
+
     return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Center(child: CircularProgressIndicator());
+    if (loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text("Announcements")),
-      body: StreamBuilder(
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _db
             .collection("announcements")
             .orderBy("createdAt", descending: true)
@@ -119,29 +151,72 @@ class _TeacherAnnouncementsScreenState
             return const Center(child: CircularProgressIndicator());
           }
 
-          var filtered = snapshot.data!.docs
-              .where((e) => _filter(e.data()))
+          final docs = snapshot.data!.docs;
+
+          final filtered = docs
+              .where((e) => _filterAnnouncement(e.data()))
               .toList();
 
-          return ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: filtered.length,
-              itemBuilder: (_, i) {
-                var d = filtered[i].data();
+          if (filtered.isEmpty) {
+            return const Center(child: Text("No announcements"));
+          }
 
-                return Card(
-                  child: ListTile(
-                    title: Text(d["title"],
-                        style: const TextStyle(color: Colors.white)),
-                    subtitle: Text(d["body"],
-                        style: const TextStyle(color: Colors.white70)),
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: filtered.length,
+            itemBuilder: (_, i) {
+              final doc = filtered[i];
+              final data = doc.data();
+              final isOwner = data["createdByUid"] == uid;
+
+              return Card(
+                color: Colors.black,
+                child: ListTile(
+                  title: Text(
+                    data["title"] ?? "",
+                    style: const TextStyle(color: Colors.white),
                   ),
-                );
-              });
+                  subtitle: Text(
+                    data["body"] ?? "",
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  trailing: isOwner
+                      ? IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text("Delete Announcement"),
+                                content: const Text(
+                                  "Are you sure you want to delete this announcement?",
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Get.back(),
+                                    child: const Text("Cancel"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      await _deleteAnnouncement(doc.id);
+                                      Get.back();
+                                    },
+                                    child: const Text("Delete"),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        )
+                      : null,
+                ),
+              );
+            },
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _create,
+        onPressed: _createAnnouncement,
         child: const Icon(Icons.add),
       ),
     );

@@ -38,213 +38,203 @@ class _RegisterStudentState extends State<RegisterStudent> {
     "Botany",
   ];
 
-  final List<String> classList = [
-    "CS1",
-    "CS2",
-    "CS3",
-    "CS4",
-    "PHY1",
-    "PHY2",
-    "PHY3",
-    "PHY4",
-    "CHE1",
-    "CHE2",
-    "CHE3",
-    "CHE4",
-    "IC1",
-    "IC2",
-    "IC3",
-    "IC4",
-    "MAT1",
-    "MAT2",
-    "MAT3",
-    "MAT4",
-    "ZOO1",
-    "ZOO2",
-    "ZOO3",
-    "ZOO4",
-    "BOO1",
-    "BOO2",
-    "BOO3",
-    "BOO4",
-    "BCOM1",
-    "BCOM2",
-    "BCOM3",
-    "BCOM4",
-    "ECO1",
-    "ECO2",
-    "ECO3",
-    "ECO4",
-    "HIN1",
-    "HIN2",
-    "HIN3",
-    "HIN4",
-    "HIS1",
-    "HIS2",
-    "HIS3",
-    "HIS3",
-    "ENG1",
-    "ENG2",
-    "ENG3",
-    "ENG4",
-    "MAL1",
-    "MAL2",
-    "MAL3",
-    "MAL4",
-  ];
+  final Map<String, List<String>> departmentClasses = {
+    "Computer Science": ["CS1", "CS2", "CS3", "CS4"],
+    "Physics": ["PHY1", "PHY2", "PHY3", "PHY4"],
+    "Chemistry": ["CHE1", "CHE2", "CHE3", "CHE4"],
+    "Maths": ["MAT1", "MAT2", "MAT3", "MAT4"],
+    "Commerce": ["BCOM1", "BCOM2", "BCOM3", "BCOM4"],
+    "Economics": ["ECO1", "ECO2", "ECO3", "ECO4"],
+    "Hindi": ["HIN1", "HIN2", "HIN3", "HIN4"],
+    "History": ["HIS1", "HIS2", "HIS3", "HIS4"],
+    "English": ["ENG1", "ENG2", "ENG3", "ENG4"],
+    "Malayalam": ["MAL1", "MAL2", "MAL3", "MAL4"],
+    "Zoology": ["ZOO1", "ZOO2", "ZOO3", "ZOO4"],
+    "Botany": ["BOO1", "BOO2", "BOO3", "BOO4"],
+  };
 
   bool loading = false;
+
+  /// ✅ FORM VALIDATION (no logic change)
+  bool get isFormValid =>
+      name.text.trim().isNotEmpty &&
+      email.text.trim().isNotEmpty &&
+      password.text.trim().isNotEmpty &&
+      phone.text.trim().isNotEmpty &&
+      admissionNumber.text.trim().isNotEmpty &&
+      selectedDept != null &&
+      selectedClass != null;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-
       appBar: AppBar(
         title: const Text("Student Registration"),
         centerTitle: true,
       ),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ------------------- NAME -------------------
-            const Text("Full Name", style: TextStyle(color: Colors.white70)),
-            TextField(
-              controller: name,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(),
-            ),
-            const SizedBox(height: 20),
-
-            // ------------------- EMAIL -------------------
-            const Text("Email", style: TextStyle(color: Colors.white70)),
-            TextField(
-              controller: email,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(),
-            ),
-            const SizedBox(height: 20),
-
-            // ------------------- PHONENUMBER -------------------
-            const Text("Phone", style: TextStyle(color: Colors.white70)),
-            TextField(
-              controller: phone,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly, // only allow digits
-                LengthLimitingTextInputFormatter(10), // max 10 digits
-              ],
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(),
-            ),
-            const SizedBox(height: 20),
-
-            // ------------------- ADMISSION NUMBER -------------------
-            const Text(
-              "Admission Number (Required)",
-              style: TextStyle(color: Colors.white70),
-            ),
-            TextField(
-              controller: admissionNumber,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(),
-            ),
-            const SizedBox(height: 20),
-
-            // ------------------- DEPARTMENT -------------------
-            const Text("Department", style: TextStyle(color: Colors.white70)),
-            DropdownButtonFormField<String>(
-              initialValue: selectedDept,
-              dropdownColor: Colors.black,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(),
-              items: departments
-                  .map(
-                    (d) => DropdownMenuItem(
-                      value: d,
-                      child: Text(
-                        d,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) => setState(() => selectedDept = value),
-            ),
-            const SizedBox(height: 20),
-
-            // ------------------- CLASS -------------------
-            const Text("Select Class", style: TextStyle(color: Colors.white70)),
-            DropdownButtonFormField<String>(
-              initialValue: selectedClass,
-              dropdownColor: Colors.black,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(),
-              items: classList
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(
-                        c,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) => setState(() => selectedClass = value),
-            ),
-            const SizedBox(height: 20),
-
-            // ------------------- PASSWORD -------------------
-            const Text("Password", style: TextStyle(color: Colors.white70)),
-            TextField(
-              controller: password,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(),
-            ),
-            const SizedBox(height: 40),
-
-            // ------------------- REGISTER BUTTON -------------------
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: loading ? null : registerStudent,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                ),
-                child: loading
-                    ? const CircularProgressIndicator(color: Colors.black)
-                    : const Text("Register", style: TextStyle(fontSize: 17)),
+      body: Stack(
+        children: [
+          ///  BACKGROUND IMAGE 
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.15,
+              child: Image.asset(
+                'assets/images/background.jpeg',
+                fit: BoxFit.cover,
               ),
             ),
-          ],
-        ),
+          ),
+
+          ///  MAIN CONTENT
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Full Name",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                TextField(
+                  controller: name,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(),
+                ),
+                const SizedBox(height: 20),
+
+                const Text("Email", style: TextStyle(color: Colors.white70)),
+                TextField(
+                  controller: email,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(),
+                ),
+                const SizedBox(height: 20),
+
+                const Text("Password", style: TextStyle(color: Colors.white70)),
+                TextField(
+                  controller: password,
+                  obscureText: true,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(),
+                ),
+                const SizedBox(height: 20),
+
+                const Text("Phone", style: TextStyle(color: Colors.white70)),
+                TextField(
+                  controller: phone,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(),
+                ),
+                const SizedBox(height: 20),
+
+                const Text(
+                  "Admission Number (Required)",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                TextField(
+                  controller: admissionNumber,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(),
+                ),
+                const SizedBox(height: 20),
+
+                const Text(
+                  "Department",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                DropdownButtonFormField<String>(
+                  value: selectedDept,
+                  dropdownColor: Colors.black,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(),
+                  items: departments
+                      .map(
+                        (d) => DropdownMenuItem(
+                          value: d,
+                          child: Text(
+                            d,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedDept = value;
+                      selectedClass = null;
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                const Text(
+                  "Select Class",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                DropdownButtonFormField<String>(
+                  value: selectedClass,
+                  dropdownColor: Colors.black,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(),
+                  items: selectedDept == null
+                      ? []
+                      : departmentClasses[selectedDept]!
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(
+                                  c,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  onChanged: (value) {
+                    setState(() => selectedClass = value);
+                  },
+                ),
+                const SizedBox(height: 40),
+
+                /// BUTTON DISABLED UNTIL ALL FIELDS FILLED
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: (!isFormValid || loading)
+                        ? null
+                        : registerStudent,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                    ),
+                    child: loading
+                        ? const CircularProgressIndicator(color: Colors.black)
+                        : const Text(
+                            "Register",
+                            style: TextStyle(fontSize: 17),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> registerStudent() async {
-    if (name.text.trim().isEmpty ||
-        email.text.trim().isEmpty ||
-        password.text.trim().isEmpty ||
-        admissionNumber.text.trim().isEmpty ||
-        selectedDept == null ||
-        selectedClass == null) {
-      Get.snackbar(
-        "Missing Fields",
-        "Please fill all fields before continuing.",
-        backgroundColor: Colors.black,
-        colorText: Colors.white,
-      );
-      return;
-    }
-
     setState(() => loading = true);
 
     UserModel user = UserModel(

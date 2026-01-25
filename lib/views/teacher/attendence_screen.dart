@@ -13,7 +13,10 @@ class AttendanceScreen extends StatefulWidget {
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
   String? assignedClass;
-  String selectedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+  DateTime selectedDate = DateTime.now();
+  String selectedDateString = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
   Map<String, double> attendanceData = {};
 
   @override
@@ -22,9 +25,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     loadTeacherClass();
   }
 
-  // ---------------------------------------------------------
-  // LOAD ASSIGNED CLASS
-  // ---------------------------------------------------------
   Future<void> loadTeacherClass() async {
     String uid = FirebaseAuth.instance.currentUser!.uid;
 
@@ -58,176 +58,172 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(title: const Text("Take Attendance")),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 12),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
 
-          // ------------------- DATE PICKER -----------------------
-          Center(
-            child: Text(
-              "Date: $selectedDate",
-              style: const TextStyle(fontSize: 16, color: Colors.white),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          Center(
-            child: ElevatedButton(
-              onPressed: pickDate,
-              child: const Text("Pick Date"),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // ------------------- STUDENT LIST -----------------------
-          Expanded(
-            child: StreamBuilder(
-              stream: FirebaseFirestore.instance
-                  .collection("users")
-                  .where("role", isEqualTo: "student")
-                  .where("classYear", isEqualTo: assignedClass)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                      child: CircularProgressIndicator(
-                    color: Colors.white,
-                  ));
-                }
-
-                var students = snapshot.data!.docs;
-
-                if (students.isEmpty) {
-                  return Center(
-                    child: Text(
-                      "No students in $assignedClass",
-                      style: const TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  itemCount: students.length,
-                  itemBuilder: (context, index) {
-                    var stu = students[index];
-                    String stuId = stu.id;
-
-                    double value =
-                        attendanceData[stuId] ?? 1.0; // default present
-
-                    return Card(
-                      color: Colors.black,
-                      margin: const EdgeInsets.only(bottom: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        side: const BorderSide(color: Colors.white, width: 1.3),
-                      ),
-                      child: ListTile(
-                        title: Text(
-                          stu["name"],
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        subtitle: Text(
-                          "Admission No: ${stu['admissionNumber']}",
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        trailing: DropdownButton<double>(
-                          dropdownColor: Colors.black,
-                          style: const TextStyle(color: Colors.white),
-                          value: value,
-                          items: const [
-                            DropdownMenuItem(
-                                value: 1.0, child: Text("Present")),
-                            DropdownMenuItem(
-                                value: 0.5, child: Text("Half Day")),
-                            DropdownMenuItem(
-                                value: 0.0, child: Text("Absent")),
-                          ],
-                          onChanged: (val) {
-                            setState(() {
-                              attendanceData[stuId] = val!;
-                            });
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-
-          // ---------------- SAVE BUTTON ------------------
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: saveAttendance,
-                child: const Text("Save Attendance"),
+            Center(
+              child: Text(
+                "Date: ${DateFormat('dd MMM yyyy').format(selectedDate)}",
+                style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 8),
+
+            ElevatedButton(
+              onPressed: () => pickDate(context),
+              child: const Text("Pick Date"),
+            ),
+
+            const SizedBox(height: 12),
+
+            Expanded(
+              child: StreamBuilder(
+                stream: FirebaseFirestore.instance
+                    .collection("users")
+                    .where("role", isEqualTo: "student")
+                    .where("classYear", isEqualTo: assignedClass)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  }
+
+                  var students = snapshot.data!.docs;
+
+                  // ================= STEP 1: INITIALIZE ATTENDANCE FOR ALL STUDENTS =================
+                  if (attendanceData.isEmpty) {
+                    for (var s in students) {
+                      attendanceData[s.id] = 1.0; // default = Present
+                    }
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(14),
+                    itemCount: students.length,
+                    itemBuilder: (context, index) {
+                      var stu = students[index];
+                      String stuId = stu.id;
+
+                      double value = attendanceData[stuId] ?? 1.0;
+
+                      return Card(
+                        color: Colors.black,
+                        child: ListTile(
+                          title: Text(
+                            stu["name"],
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          trailing: DropdownButton<double>(
+                            dropdownColor: Colors.black,
+                            value: value,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 1.0,
+                                child: Text("Present"),
+                              ),
+                              DropdownMenuItem(
+                                value: 0.5,
+                                child: Text("Half Day"),
+                              ),
+                              DropdownMenuItem(
+                                value: 0.0,
+                                child: Text("Absent"),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              setState(() {
+                                attendanceData[stuId] = val!;
+                              });
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: saveAttendance,
+                  child: const Text("Save Attendance"),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ------------------ DATE PICKER ------------------
-  Future<void> pickDate() async {
+  Future<void> pickDate(BuildContext context) async {
     DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: selectedDate,
       firstDate: DateTime(2024),
-      lastDate: DateTime(2026),
-
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Colors.white,
-              onSurface: Colors.white,
-              surface: Colors.black,
-            ), dialogTheme: DialogThemeData(backgroundColor: Colors.black),
-          ),
-          child: child!,
-        );
-      },
+      lastDate: DateTime(2050),
     );
 
     if (picked != null) {
       setState(() {
-        selectedDate = DateFormat("yyyy-MM-dd").format(picked);
+        selectedDate = picked;
+        selectedDateString = DateFormat("yyyy-MM-dd").format(picked);
       });
     }
   }
 
-  // ---------------- SAVE ATTENDANCE ---------------------
- Future<void> saveAttendance() async {
-  final batch = FirebaseFirestore.instance.batch();
+  // ================== SAVE ATTENDANCE WITH SNACKBAR ==================
+  Future<void> saveAttendance() async {
+    if (attendanceData.isEmpty) {
+      Get.snackbar(
+        "No Data",
+        "No attendance marked",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
 
-  attendanceData.forEach((stuId, value) {
-    final ref = FirebaseFirestore.instance
-        .collection("attendance")
-        .doc(stuId);
+    try {
+      final batch = FirebaseFirestore.instance.batch();
 
-    batch.set(
-      ref,
-      {selectedDate: value},
-      SetOptions(merge: true),
-    );
-  });
+      attendanceData.forEach((stuId, value) {
+        final ref = FirebaseFirestore.instance
+            .collection("attendance")
+            .doc(stuId);
 
-  await batch.commit();
+        batch.set(ref, {selectedDateString: value}, SetOptions(merge: true));
+      });
 
-  Get.snackbar(
-    "Success",
-    "Attendance saved!",
-    backgroundColor: Colors.black,
-    colorText: Colors.white,
-  );
-}
+      await batch.commit();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          "Success",
+          "Attendance saved!",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      });
+    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          "Error",
+          "Failed to save attendance",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      });
+    }
+  }
 }

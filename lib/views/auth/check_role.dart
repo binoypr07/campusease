@@ -3,52 +3,87 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import '../../core/services/firebase_auth_service.dart';
 
-class CheckRole extends StatelessWidget {
+class CheckRole extends StatefulWidget {
   const CheckRole({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<CheckRole> createState() => _CheckRoleState();
+}
+
+class _CheckRoleState extends State<CheckRole> {
+  @override
+  void initState() {
+    super.initState();
+    // This starts the logic immediately when the screen opens
+    _determineNavigation();
+  }
+
+  Future<void> _determineNavigation() async {
     FirebaseAuthService service = FirebaseAuthService();
-    String uid = FirebaseAuth.instance.currentUser!.uid;
 
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: service.getUserRole(uid),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    // 1. Brief pause to allow Firebase to finalize the login session
+    await Future.delayed(const Duration(milliseconds: 600));
 
-        if (!snapshot.hasData || snapshot.data == null) {
-          return const Scaffold(
-            body: Center(child: Text("User not approved yet")),
-          );
-        }
+    User? user = FirebaseAuth.instance.currentUser;
 
-        Map<String, dynamic> data = snapshot.data!;
-        String role = (data['role'] ?? '').toString();
+    if (user != null) {
+      try {
+        // 2. Fetch the user document from Firestore
+        Map<String, dynamic>? data = await service.getUserRole(user.uid);
 
-        // Safe navigation AFTER build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (data != null) {
+          String role = (data['role'] ?? '').toString();
+
+          // 3. Navigate automatically based on role
           if (role == "admin") {
             Get.offAllNamed('/adminDashboard');
           } else if (role == "teacher") {
             Get.offAllNamed('/teacherDashboard');
-          } else {
+          } else if (role == "student") {
             Get.offAllNamed('/studentDashboard');
+          } else {
+            _handleError("Role not found. Contact Admin.");
           }
-        });
+        } else {
+          _handleError("User data not found in database.");
+        }
+      } catch (e) {
+        _handleError("Error: $e");
+      }
+    } else {
+      // If no user found, go back to Login
+      Get.offAllNamed('/login');
+    }
+  }
 
-        return const Scaffold(
-          body: Center(
-            child: Text(
-              "Checking role...",
-              style: TextStyle(fontSize: 20),
+  void _handleError(String message) {
+    if (!mounted) return;
+    Get.snackbar(
+      "Error",
+      message,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+    Get.offAllNamed('/login');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Colors.white),
+            SizedBox(height: 20),
+            Text(
+              "Syncing Dashboard...",
+              style: TextStyle(color: Colors.white, fontSize: 16),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }
