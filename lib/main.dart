@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -37,26 +38,26 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (!kIsWeb) {
+    await FirebaseMessaging.instance.requestPermission();
 
-  await FirebaseMessaging.instance.requestPermission();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await NotificationHandler.init();
+    NotificationHandler.listenForeground();
 
-  await NotificationHandler.init();
-  NotificationHandler.listenForeground();
-
-  FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Get.snackbar(
-        msg.notification?.title ?? "Notification",
-        msg.notification?.body ?? "",
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.black,
-        colorText: Colors.white,
-      );
+    FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          msg.notification?.title ?? "Notification",
+          msg.notification?.body ?? "",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.black,
+          colorText: Colors.white,
+        );
+      });
     });
-  });
-
+  }
   runApp(const MyApp());
 }
 
@@ -68,7 +69,6 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: "CampusEase",
-
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
@@ -126,7 +126,10 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
       ),
 
       getPages: [

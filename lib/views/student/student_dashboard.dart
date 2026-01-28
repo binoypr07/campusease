@@ -1,3 +1,4 @@
+import 'package:campusease/views/aboutus/about_us_page.dart';
 import 'package:campusease/views/student/global_chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -35,7 +36,7 @@ class _StudentDashboardState extends State<StudentDashboard>
 
     _notifAnimation = CurvedAnimation(
       parent: _notifController,
-      curve: Curves.elasticOut, // This gives it the "Pop" effect
+      curve: Curves.elasticOut,
     );
   }
 
@@ -116,6 +117,12 @@ class _StudentDashboardState extends State<StudentDashboard>
           appBar: AppBar(
             title: const Text("Student Dashboard"),
             centerTitle: true,
+            // ABOUT US ICON (LEFT)
+            leading: IconButton(
+              icon: const Icon(Icons.info_outline),
+              tooltip: "About Us",
+              onPressed: () => Get.to(() => const AboutUsPage()),
+            ),
             actions: [
               // AI Assistant
               IconButton(
@@ -145,12 +152,11 @@ class _StudentDashboardState extends State<StudentDashboard>
                                 as Timestamp)
                             .toDate();
 
-                    // Logic: If post is newer than 24 hours, show animated dot
                     if (DateTime.now().difference(lastTime).inHours < 24) {
                       showRedDot = true;
-                      _notifController.forward(); // Start Pop Animation
+                      _notifController.forward();
                     } else {
-                      _notifController.reverse(); // Hide Dot
+                      _notifController.reverse();
                     }
                   }
 
@@ -196,6 +202,56 @@ class _StudentDashboardState extends State<StudentDashboard>
               ),
             ],
           ),
+
+          // --- FIXED GRADIENT GLOW CHAT BUTTON ---
+          floatingActionButton: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              gradient: const LinearGradient(
+                colors: [Colors.blueAccent, Colors.purpleAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blueAccent.withOpacity(0.4),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: FloatingActionButton.extended(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              focusElevation: 0,
+              highlightElevation: 0,
+              hoverElevation: 0,
+              splashColor: Colors.white24,
+              icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+              label: const Text(
+                "Class Chat",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              onPressed: () {
+                if (assignedClass.isEmpty) {
+                  Get.snackbar(
+                    "Error",
+                    "Class not assigned",
+                    backgroundColor: Colors.black,
+                    colorText: Colors.white,
+                  );
+                  return;
+                }
+                Get.to(() => GlobalChatScreen(classId: assignedClass));
+              },
+            ),
+          ),
+
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: ListView(
@@ -293,28 +349,8 @@ class _StudentDashboardState extends State<StudentDashboard>
                     ),
                   ),
                 ),
-                // ------------------ CLASS CHAT ------------------
-                buildCard(
-                  icon: Icons.chat_bubble_outline,
-                  title: "Class Chat",
-                  subtitle: assignedClass == null || assignedClass!.isEmpty
-                      ? "Assign class first"
-                      : "Chat with your class",
-                  onTap: () {
-                    if (assignedClass == null || assignedClass!.isEmpty) {
-                      Get.snackbar(
-                        "Class Not Assigned",
-                        "Please assign a class first!",
-                        backgroundColor: Colors.black,
-                        colorText: Colors.white,
-                      );
-                      return;
-                    }
-                    // Navigate to GlobalChatScreen with classId
-                    Get.to(() => GlobalChatScreen(classId: assignedClass!));
-                  },
-                ),
-                const SizedBox(height: 20),
+                // Extra space at bottom so FAB doesn't cover the last card
+                const SizedBox(height: 80),
               ],
             ),
           ),

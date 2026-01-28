@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/services/firebase_auth_service.dart';
@@ -304,12 +305,14 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token != null) {
-        await FirebaseFirestore.instance
-            .collection("users")
-            .doc(user.uid)
-            .update({"fcmToken": token});
+      if (!kIsWeb) {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null) {
+          await FirebaseFirestore.instance
+              .collection("users")
+              .doc(user.uid)
+              .update({"fcmToken": token});
+        }
       }
 
       Get.offAllNamed('/checkRole');
