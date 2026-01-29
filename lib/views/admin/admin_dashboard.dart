@@ -1,3 +1,4 @@
+import 'package:campusease/views/aboutus/about_us_page.dart';
 import 'package:campusease/views/admin/admin_library_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -46,8 +47,17 @@ class AdminDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
-      appBar: AppBar(title: const Text("Admin Dashboard"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Admin Dashboard"),
+        centerTitle: true,
+
+        // ABOUT US ICON (LEFT)
+        leading: IconButton(
+          icon: const Icon(Icons.info_outline),
+          tooltip: "About Us",
+          onPressed: () => Get.to(() => const AboutUsPage()),
+        ),
+      ),
 
       body: Padding(
         padding: const EdgeInsets.all(16),
