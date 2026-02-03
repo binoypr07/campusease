@@ -15,18 +15,17 @@ class _AdminAllTeachersScreenState extends State<AdminAllTeachersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text("All Teachers"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("All Teachers"), centerTitle: true),
       body: StreamBuilder(
-        stream: _db.collection("users")
+        stream: _db
+            .collection("users")
             .where("role", isEqualTo: "teacher")
             .snapshots(),
         builder: (context, snapshot) {
-
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator(color: Colors.white));
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
           }
 
           var teachers = snapshot.data!.docs;
@@ -42,7 +41,10 @@ class _AdminAllTeachersScreenState extends State<AdminAllTeachersScreen> {
 
           if (deptMap.isEmpty) {
             return const Center(
-              child: Text("No teachers found", style: TextStyle(color: Colors.white)),
+              child: Text(
+                "No teachers found",
+                style: TextStyle(color: Colors.white),
+              ),
             );
           }
 
@@ -57,13 +59,20 @@ class _AdminAllTeachersScreenState extends State<AdminAllTeachersScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: ExpansionTile(
-                  title: Text(entry.key,
-                      style: const TextStyle(color: Colors.white, fontSize: 18)),
+                  title: Text(
+                    entry.key,
+                    style: const TextStyle(color: Colors.white, fontSize: 18),
+                  ),
                   children: entry.value.map((teacher) {
                     return ListTile(
-                      title: Text(teacher["name"], style: const TextStyle(color: Colors.white)),
-                      subtitle: Text("ID: ${teacher['teacherId']}",
-                          style: const TextStyle(color: Colors.white70)),
+                      title: Text(
+                        teacher["name"],
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        "ID: ${teacher['teacherId']}",
+                        style: const TextStyle(color: Colors.white70),
+                      ),
                     );
                   }).toList(),
                 ),

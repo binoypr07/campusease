@@ -44,13 +44,17 @@ class AboutUsPage extends StatelessWidget {
               style: TextStyle(color: Colors.white54, fontSize: 13),
             ),
             const SizedBox(height: 25),
+            // WORKING EMAIL TILE
             _buildProfessionalContactTile(
+              context,
               Icons.alternate_email_rounded,
               "Email Support",
-              "campusease.support@gmail.com",
+              "campusease.help@gmail.com",
             ),
             const SizedBox(height: 16),
+            // WORKING PHONE TILE
             _buildProfessionalContactTile(
+              context,
               Icons.phone_in_talk_rounded,
               "Direct Helpline",
               "+91 91887 85203",
@@ -149,49 +153,84 @@ class AboutUsPage extends StatelessWidget {
     );
   }
 
+  // FIXED: Added tap logic and uri launching
   Widget _buildProfessionalContactTile(
+    BuildContext context,
     IconData icon,
     String label,
     String value,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () async {
+          Uri uri;
+          if (label.toLowerCase().contains('email')) {
+            uri = Uri.parse("mailto:$value");
+          } else {
+            // Removes spaces from phone numbers for proper dialing
+            uri = Uri.parse("tel:${value.replaceAll(' ', '')}");
+          }
+
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri);
+          } else {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Could not open app")),
+              );
+            }
+          }
+        },
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blueAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: Colors.blueAccent, size: 20),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white10),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Icon(icon, color: Colors.blueAccent, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                      ),
+                    ),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 12,
+                color: Colors.white10,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

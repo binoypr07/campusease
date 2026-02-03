@@ -1,3 +1,4 @@
+import 'package:campusease/views/splash/splash_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -194,11 +195,10 @@ class MyApp extends StatelessWidget {
           name: '/adminAttendance',
           page: () => const AdminAttendanceScreen(),
         ),
+        GetPage(name: '/', page: () => const SplashScreen()),
       ],
 
-      home: FirebaseAuth.instance.currentUser == null
-          ? const LoginScreen()
-          : const CheckRole(),
+      home: const SplashScreen(),
     );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:campusease/views/aboutus/about_us_page.dart';
-import 'package:campusease/views/student/global_chat_screen.dart';
+import 'package:campusease/views/chat/global_chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';

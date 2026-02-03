@@ -55,7 +55,7 @@ class _RegisterStudentState extends State<RegisterStudent> {
 
   bool loading = false;
 
-  /// ✅ FORM VALIDATION (no logic change)
+  /// FORM VALIDATION 
   bool get isFormValid =>
       name.text.trim().isNotEmpty &&
       email.text.trim().isNotEmpty &&

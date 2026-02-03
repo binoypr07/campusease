@@ -1,6 +1,8 @@
+import 'package:campusease/views/student/members_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../models/message_model.dart';
 
@@ -23,6 +25,7 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
   String userDept = "";
   MessageModel? editingMessage;
   MessageModel? replyingMessage;
+  String? fieldError;
 
   @override
   void initState() {
@@ -79,39 +82,55 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
     );
   }
 
-  Future<void> sendMessage() async {
+  // FIXED: Instant clearing logic
+  void sendMessage() {
     String msg = messageController.text.trim();
-    if (msg.isEmpty) return;
 
-    if (editingMessage != null) {
-      await FirebaseFirestore.instance
-          .collection('class_chats')
-          .doc(widget.classId)
-          .collection('messages')
-          .doc(editingMessage!.id)
-          .update({'message': msg});
-      setState(() => editingMessage = null);
-    } else {
-      final messageData = {
-        'senderId': uid,
-        'senderName': name,
-        'senderRole': role,
-        'message': msg,
-        'timestamp': FieldValue.serverTimestamp(),
-        'status': 'delivered',
-        'replyTo': replyingMessage?.message,
-        'seenBy': [uid],
-      };
-
-      await FirebaseFirestore.instance
-          .collection('class_chats')
-          .doc(widget.classId)
-          .collection('messages')
-          .add(messageData);
-
-      setState(() => replyingMessage = null);
+    if (msg.isEmpty) {
+      setState(() => fieldError = "Empty!");
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => fieldError = null);
+      });
+      return;
     }
+
+    // 1. CLEAR IMMEDIATELY (Feels instant to user)
     messageController.clear();
+
+    // 2. CAPTURE DATA & RESET UI STATE
+    final tempReplyingMessage = replyingMessage;
+    final tempEditingMessage = editingMessage;
+
+    setState(() {
+      replyingMessage = null;
+      editingMessage = null;
+      fieldError = null;
+    });
+
+    // 3. RUN DATABASE UPDATE IN BACKGROUND (No 'await' here to prevent UI lag)
+    if (tempEditingMessage != null) {
+      FirebaseFirestore.instance
+          .collection('class_chats')
+          .doc(widget.classId)
+          .collection('messages')
+          .doc(tempEditingMessage.id)
+          .update({'message': msg});
+    } else {
+      FirebaseFirestore.instance
+          .collection('class_chats')
+          .doc(widget.classId)
+          .collection('messages')
+          .add({
+            'senderId': uid,
+            'senderName': name,
+            'senderRole': role,
+            'message': msg,
+            'timestamp': FieldValue.serverTimestamp(),
+            'status': 'delivered',
+            'replyTo': tempReplyingMessage?.message,
+            'seenBy': [uid],
+          });
+    }
   }
 
   void _showSeenByList(List seenByIDs) {
@@ -252,7 +271,33 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: const Color(0xFF1F2C34),
-        title: Text("Class Chat: ${widget.classId}"),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.classId,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Text(
+              "Tap for group info",
+              style: TextStyle(fontSize: 11, color: Colors.white54),
+            ),
+          ],
+        ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.people_alt_outlined, color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    MembersListScreen(classId: widget.classId),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -262,19 +307,14 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
                   .collection('class_chats')
                   .doc(widget.classId)
                   .collection('messages')
-                  .orderBy(
-                    'timestamp',
-                    descending: true,
-                  ) // Sort Newest first for reverse
+                  .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData)
                   return const Center(child: CircularProgressIndicator());
-
                 final docs = snapshot.data!.docs;
-
                 return ListView.builder(
-                  reverse: true, // WhatsApp style: anchored to bottom
+                  reverse: true,
                   controller: scrollController,
                   itemCount: docs.length,
                   padding: const EdgeInsets.all(10),
@@ -282,11 +322,7 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
                     var data = docs[index].data() as Map<String, dynamic>;
                     String docId = docs[index].id;
                     List seenBy = data['seenBy'] ?? [];
-
-                    if (data['senderId'] != uid) {
-                      _markAsSeen(docId, seenBy);
-                    }
-
+                    if (data['senderId'] != uid) _markAsSeen(docId, seenBy);
                     final msg = MessageModel(
                       id: docId,
                       senderId: data['senderId'] ?? '',
@@ -299,7 +335,6 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
                       status: data['status'] ?? 'delivered',
                       replyTo: data['replyTo'],
                     );
-
                     return SwipeToReplyItem(
                       message: msg,
                       isMe: msg.senderId == uid,
@@ -367,28 +402,69 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
 
   Widget _buildMessageInput() {
     return Container(
-      padding: const EdgeInsets.all(8),
-      color: const Color(0xFF1F2C34),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1F2C34),
+        border: Border(top: BorderSide(color: Colors.white10, width: 0.5)),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
             child: TextField(
               controller: messageController,
               focusNode: messageFocusNode,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: "Type here",
-                border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.white54),
+              maxLines: 5,
+              minLines: 1,
+              keyboardType: TextInputType.multiline,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              decoration: InputDecoration(
+                errorText: fieldError,
+                errorStyle: const TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 10,
+                  height: 0.1,
+                ),
+                hintText: "Type a message...",
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: const Color(0xFF2A3942),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
-          IconButton(
-            icon: Icon(
-              editingMessage != null ? Icons.check : Icons.send,
-              color: Colors.blueAccent,
+          const SizedBox(width: 8),
+          Container(
+            margin: const EdgeInsets.only(bottom: 2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blueAccent.withOpacity(0.3),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-            onPressed: sendMessage,
+            child: CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.blueAccent,
+              child: IconButton(
+                icon: Icon(
+                  editingMessage != null ? Icons.check : Icons.send,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onPressed: sendMessage,
+              ),
+            ),
           ),
         ],
       ),
@@ -402,7 +478,6 @@ class SwipeToReplyItem extends StatefulWidget {
   final Function(MessageModel) onReply;
   final Function(TapDownDetails, MessageModel) onLongPress;
   final Widget statusIcon;
-
   const SwipeToReplyItem({
     super.key,
     required this.message,
@@ -411,7 +486,6 @@ class SwipeToReplyItem extends StatefulWidget {
     required this.onLongPress,
     required this.statusIcon,
   });
-
   @override
   State<SwipeToReplyItem> createState() => _SwipeToReplyItemState();
 }
@@ -422,7 +496,6 @@ class _SwipeToReplyItemState extends State<SwipeToReplyItem>
   late Animation<Offset> _animation;
   double _dragExtent = 0;
   TapDownDetails? _tapDetails;
-
   @override
   void initState() {
     super.initState();

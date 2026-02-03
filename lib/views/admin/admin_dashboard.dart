@@ -1,5 +1,4 @@
 import 'package:campusease/views/aboutus/about_us_page.dart';
-import 'package:campusease/views/admin/admin_library_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -109,16 +108,6 @@ class AdminDashboard extends StatelessWidget {
               },
             ),
 
-            // ------------------- SMART LIBRARY UPLOAD -------------------
-            buildCard(
-              icon: Icons.library_add,
-              title: "Manage Library",
-              subtitle: "Upload PDFs & Manage Books",
-              onTap: () {
-                // We will create this page in Step 2
-                Get.to(() => const AdminLibraryPage());
-              },
-            ),
             const SizedBox(height: 20),
 
             // ------------------- LOGOUT -------------------

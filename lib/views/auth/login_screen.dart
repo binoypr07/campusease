@@ -24,14 +24,20 @@ class _LoginScreenState extends State<LoginScreen>
   bool showPassword = false;
 
   late AnimationController _mainController;
+  late Animation<double> _smoothAnimation;
 
   @override
   void initState() {
     super.initState();
     _mainController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(); // animation controller still needed for text wave
+      duration: const Duration(seconds: 20),
+    )..repeat(reverse: true);
+
+    _smoothAnimation = CurvedAnimation(
+      parent: _mainController,
+      curve: Curves.linear,
+    );
   }
 
   @override
@@ -42,67 +48,53 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  /// TITLE ANIMATION (UNCHANGED)
+  /// TITLE — PROFESSIONAL SILKY GRADIENT FLOW
   Widget staggeredText(String text, double fontSize) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: text.split('').asMap().entries.map((entry) {
-        int index = entry.key;
-        String char = entry.value;
+    return AnimatedBuilder(
+      animation: _smoothAnimation,
+      builder: (context, child) {
+        final double t = _smoothAnimation.value;
 
-        return AnimatedBuilder(
-          animation: _mainController,
-          builder: (context, child) {
-            double waveValue = 0.0;
-            if (_mainController.isAnimating) {
-              waveValue = Curves.easeInOut.transform(
-                ((_mainController.value - (index * 0.08)) % 1.0).clamp(
-                  0.0,
-                  1.0,
-                ),
-              );
-            }
-            double yOffset =
-                Curves.easeInOut.transform(
-                  (0.5 - (0.5 - waveValue).abs()) * 2,
-                ) *
-                -12;
-
-            Color dynamicColor = HSVColor.fromAHSV(
-              1.0,
-              (_mainController.value * 360 + (index * 20)) % 360,
-              0.4,
-              0.9,
-            ).toColor();
-
-            return Transform.translate(
-              offset: Offset(0, yOffset),
-              child: Text(
-                char,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1,
-                  color: dynamicColor,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 10,
-                      color: dynamicColor.withOpacity(0.5),
-                    ),
-                  ],
-                ),
-              ),
-            );
+        return ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment(6.0 - (t * 12.0), 0),
+              end: Alignment(2.0 - (t * 12.0), 0),
+              tileMode: TileMode.repeated,
+              colors: const [
+                Color(0xFFB5179E), // Muted Rose
+                Color(0xFF4361EE), // Deep Blue
+                Color(0xFFB5179E),
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ).createShader(bounds);
           },
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+              color: Colors.white,
+              shadows: const [
+                Shadow(
+                  blurRadius: 8,
+                  color: Colors.black54,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+          ),
         );
-      }).toList(),
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // static black background
+      backgroundColor: Colors.black,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
@@ -116,14 +108,14 @@ class _LoginScreenState extends State<LoginScreen>
                 animation: _mainController,
                 builder: (context, child) {
                   double opacityValue =
-                      (math.sin(_mainController.value * math.pi * 5) + 1) / 2;
+                      (math.sin(_mainController.value * math.pi * 15) + 1) / 2;
                   return Opacity(
                     opacity: 0.3 + (opacityValue * 0.7),
                     child: const Text(
                       "Login to Continue",
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.red,
+                        color: Color.fromARGB(255, 191, 225, 229),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
