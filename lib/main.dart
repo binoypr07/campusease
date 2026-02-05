@@ -2,6 +2,7 @@ import 'package:campusease/views/splash/splash_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:http/http.dart' as http;
 import 'firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,35 +32,44 @@ import 'views/admin/admin_students_list.dart';
 import 'views/admin/admin_teacher_list.dart';
 import 'views/admin/admin_attendance_screen.dart';
 
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  print("Background Notification: ${message.notification?.title}");
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint("Background Notification: ${message.notification?.title}");
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   if (!kIsWeb) {
-    await FirebaseMessaging.instance.requestPermission();
+    // Background handler
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    // Permission (Android 13+)
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
 
+    // Local notification setup
     await NotificationHandler.init();
     NotificationHandler.listenForeground();
-
-    FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.snackbar(
-          msg.notification?.title ?? "Notification",
-          msg.notification?.body ?? "",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.black,
-          colorText: Colors.white,
-        );
-      });
-    });
   }
+  pingRenderAPI();
   runApp(const MyApp());
+}
+
+Future<void> pingRenderAPI() async {
+  final url = Uri.parse('https://shade-0pxb.onrender.com/users');
+
+  try {
+    var res = await http.get(url).timeout(Duration(seconds: 120));
+    print('Pinged Render API successfully. res : $res');
+  } catch (e) {
+    print('Failed to ping Render API: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {

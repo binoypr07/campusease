@@ -14,8 +14,9 @@ class _LibraryPageState extends State<LibraryPage> {
   final ScrollController _scrollController = ScrollController();
 
   // --- 2026 GROQ CONFIGURATION ---
-  // Ensure your API Key is valid at https://console.groq.com/keys
-  final String _groqApiKey = '';
+
+  final String _groqApiKey =
+      '';
 
   // Llama 3.1 is the stable instant model for 2026
   final String _model = 'llama-3.1-8b-instant';

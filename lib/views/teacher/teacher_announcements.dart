@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 
 class TeacherAnnouncementsScreen extends StatefulWidget {
   const TeacherAnnouncementsScreen({super.key});
@@ -31,6 +33,30 @@ class _TeacherAnnouncementsScreenState
     teacherDept = doc.data()?["department"];
     teacherClass = doc.data()?["assignedClass"];
     setState(() => loading = false);
+  }
+
+  // ---------------- SYNC TO RENDER (FOR POPUP) ----------------
+  Future<void> syncAnnouncement(
+    String title,
+    String body,
+    String targetTopic,
+  ) async {
+    final url = Uri.parse('https://shade-0pxb.onrender.com/users');
+    try {
+      await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "sender": "Announcement",
+          "text": "$title: $body",
+          "classId":
+              targetTopic, 
+        }),
+      );
+      print("Announcement notification triggered successfully");
+    } catch (e) {
+      print("Error syncing announcement: $e");
+    }
   }
 
   // ---------------- CREATE ANNOUNCEMENT ----------------
@@ -95,13 +121,21 @@ class _TeacherAnnouncementsScreenState
           ),
           ElevatedButton(
             onPressed: () async {
+              final title = titleC.text.trim();
+              final bodyText = bodyC.text.trim();
+
+              // 1. Save to Firebase
               await _db.collection("announcements").add({
-                "title": titleC.text.trim(),
-                "body": bodyC.text.trim(),
+                "title": title,
+                "body": bodyText,
                 "createdByUid": uid,
                 "createdAt": FieldValue.serverTimestamp(),
                 "target": {"type": targetType, "value": targetValue},
               });
+
+              // 2. Trigger Notification Popup via Render
+              syncAnnouncement(title, bodyText, targetValue);
+
               Get.back();
             },
             child: const Text("Send"),

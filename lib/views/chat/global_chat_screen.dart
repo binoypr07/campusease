@@ -1,8 +1,10 @@
-import 'package:campusease/views/student/members_list_screen.dart';
+import 'dart:convert';
+
+import 'package:campusease/views/chat/members_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../../models/message_model.dart';
 
@@ -31,6 +33,8 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
   void initState() {
     super.initState();
     _loadCurrentUser();
+    // Wake up the Render server immediately on screen load
+    syncWithRender("System_Wakeup", "User_Entry");
   }
 
   @override
@@ -70,6 +74,25 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
             'seenBy': FieldValue.arrayUnion([uid]),
           })
           .catchError((e) => print("Seen update failed: $e"));
+    }
+  }
+
+  Future<void> syncWithRender(String msg, String senderName) async {
+    final url = Uri.parse('https://shade-0pxb.onrender.com/users');
+    try {
+      await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "sender": senderName,
+          "text": msg,
+          "classId": widget.classId,
+          "time": DateTime.now().toIso8601String(),
+        }),
+      );
+      print("Sent to Render successfully");
+    } catch (e) {
+      print("Render server is likely asleep or error: $e");
     }
   }
 
@@ -115,6 +138,9 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
           .collection('messages')
           .doc(tempEditingMessage.id)
           .update({'message': msg});
+
+      // Sync edit to Render
+      syncWithRender("(Edited) $msg", name);
     } else {
       FirebaseFirestore.instance
           .collection('class_chats')
@@ -130,6 +156,9 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
             'replyTo': tempReplyingMessage?.message,
             'seenBy': [uid],
           });
+
+      // Sync new message to Render
+      syncWithRender(msg, name);
     }
   }
 

@@ -1,15 +1,17 @@
 import 'package:campusease/views/aboutus/about_us_page.dart';
 import 'package:campusease/views/chat/global_chat_screen.dart';
+import 'package:campusease/views/feepayment/fee_payment_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'qr.dart';
 import 'timetable_page.dart';
 import 'feedback_page.dart';
 import 'polls_page.dart';
 import 'student_internal_marks.dart';
-import 'library_page.dart';
+import '../ai/library_page.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -73,6 +75,54 @@ class _StudentDashboardState extends State<StudentDashboard>
         ),
         trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white),
         onTap: onTap,
+      ),
+    );
+  }
+
+  // ---------------- NEW SERVICE CARD (ADDED ONLY) ----------------
+  Widget buildServiceButton({
+    required IconData icon,
+    required String title,
+    String? url, // Optional now
+    VoidCallback? onTap, // Optional now
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap:
+            onTap ??
+            () async {
+              if (url != null && url.isNotEmpty) {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              }
+            },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF252525),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.blueAccent, size: 32),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -203,7 +253,7 @@ class _StudentDashboardState extends State<StudentDashboard>
             ],
           ),
 
-          // --- FIXED GRADIENT GLOW CHAT BUTTON ---
+          // -- GLOW CHAT BUTTON ---
           floatingActionButton: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
@@ -349,8 +399,53 @@ class _StudentDashboardState extends State<StudentDashboard>
                     ),
                   ),
                 ),
-                // Extra space at bottom so FAB doesn't cover the last card
-                const SizedBox(height: 80),
+                const SizedBox(height: 20),
+                // ---------------- SERVICES SECTION ----------------
+                // ---------------- ONLINE  ----------------
+                const Padding(
+                  padding: EdgeInsets.only(left: 8, bottom: 16, top: 20),
+                  child: Text(
+                    "Online Services",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    buildServiceButton(
+                      icon: Icons.account_balance_wallet,
+                      title: "Fees",
+                      url: "", // You can leave this empty
+                      onTap: () => Get.to(
+                        () => FeePaymentPage(
+                          studentName: studentName,
+                          studentId: studentId,
+                        ),
+                      ),
+                    ),
+                    buildServiceButton(
+                      icon: Icons.language,
+                      title: "Web",
+                      url: "https://uoc.ac.in/",
+                    ),
+                    buildServiceButton(
+                      icon: Icons.menu_book,
+                      title: "Notes",
+                      url: "https://sde.uoc.ac.in/?q=content/study-material",
+                    ),
+                    buildServiceButton(
+                      icon: Icons.campaign_sharp,
+                      title: "Result",
+                      url: "https://results.uoc.ac.in/",
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 100),
               ],
             ),
           ),

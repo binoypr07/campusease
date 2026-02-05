@@ -2,48 +2,70 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:developer';
 
-class NotificationHandler {
-  static final FlutterLocalNotificationsPlugin _localNotif =
-      FlutterLocalNotificationsPlugin();
+import 'package:http/http.dart' as http;
 
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  log("Background Notification: ${message.notification?.title}");
+}
+
+class NotificationHandler {
   static Future<void> init() async {
     const AndroidInitializationSettings androidInit =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initSettings =
-        InitializationSettings(android: androidInit);
+    const InitializationSettings initSettings = InitializationSettings(
+      android: androidInit,
+    );
 
-    await _localNotif.initialize(initSettings);
+    await flutterLocalNotificationsPlugin.initialize(initSettings);
+
+    //   notification channel
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'default_channel',
+      'General Notifications',
+      description: 'CampusEase notifications',
+      importance: Importance.max,
+    );
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(channel);
   }
 
-  // show notification in foreground
+  /// Foreground notification
   static Future<void> showLocalNotification(RemoteMessage message) async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-      'default_channel',
-      'General Notifications',
-      importance: Importance.max,
-      priority: Priority.high,
+          'default_channel',
+          'General Notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
     );
 
-    const NotificationDetails notifDetails =
-        NotificationDetails(android: androidDetails);
-
-    await _localNotif.show(
+    await flutterLocalNotificationsPlugin.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      message.notification?.title ?? "New Announcement",
+      message.notification?.title ?? "CampusEase",
       message.notification?.body ?? "",
-      notifDetails,
+      notificationDetails,
     );
   }
 
-  // listen to foreground messages
+  /// Foreground listener
   static void listenForeground() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       showLocalNotification(message);
     });
   }
-  Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
-  log("Background Notification: ${message.notification?.title}");
-  }
 }
+
+

@@ -87,7 +87,7 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
 
       students = snap.docs.map((d) => {'id': d.id, 'name': d['name']}).toList();
 
-      await loadAllAttendance(); // ✅ load attendance after students loaded
+      await loadAllAttendance();
     } catch (_) {
       Get.snackbar("Error", "Failed to load students");
     }
@@ -138,7 +138,7 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
         build: (_) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text("Class Attendance", style: pw.TextStyle(fontSize: 18)),
+            pw.Text("Class Attendance CS3", style: pw.TextStyle(fontSize: 18)),
             pw.SizedBox(height: 10),
             pw.Table.fromTextArray(
               headers: [

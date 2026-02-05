@@ -49,8 +49,16 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _startNavigation() async {
     await Future.delayed(const Duration(seconds: 3));
-    User? user = FirebaseAuth.instance.currentUser;
-    Get.offAllNamed(user == null ? '/login' : '/checkRole');
+
+    FirebaseAuth.instance.authStateChanges().first.then((user) {
+      if (!mounted) return;
+
+      if (user == null) {
+        Get.offAllNamed('/login');
+      } else {
+        Get.offAllNamed('/checkRole');
+      }
+    });
   }
 
   @override

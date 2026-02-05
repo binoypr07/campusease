@@ -1,15 +1,17 @@
 import 'package:campusease/views/aboutus/about_us_page.dart';
 import 'package:campusease/views/chat/global_chat_screen.dart';
-import 'package:campusease/views/student/library_page.dart';
+import 'package:campusease/views/feepayment/fee_payment_page.dart';
+import 'package:campusease/views/ai/library_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'editable_timetable_page.dart';
 import 'teacher_feedback_page.dart';
-import 'teacherPollPage.dart';
-import 'teacher_poll_results.dart' as pollResults;
+import 'poll/teacherPollPage.dart';
+import 'poll/teacher_poll_results.dart' as pollResults;
 import ' internal_marks_page.dart';
 
 class TeacherDashboard extends StatefulWidget {
@@ -76,6 +78,54 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     );
   }
 
+  // ---------------- NEW SERVICE CARD  ----------------
+  Widget buildServiceButton({
+    required IconData icon,
+    required String title,
+    String? url, 
+    VoidCallback? onTap, 
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap:
+            onTap ??
+            () async {
+              if (url != null && url.isNotEmpty) {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              }
+            },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF252525),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.blueAccent, size: 32),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -112,7 +162,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         ],
       ),
 
-      // --- FIXED GRADIENT GLOW CHAT BUTTON ---
+      // --- GLOW CHAT BUTTON ---
       floatingActionButton: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
@@ -259,6 +309,49 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 }
               },
             ),
+            // ---------------- SERVICES SECTION ----------------
+            // ---------------- ONLINE  ----------------
+            const Padding(
+              padding: EdgeInsets.only(left: 8, bottom: 16, top: 20),
+              child: Text(
+                "Online Services",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                buildServiceButton(
+                  icon: Icons.account_balance_wallet,
+                  title: "Fees",
+                  url: "", 
+                  onTap: () => Get.to(
+                    () => FeePaymentPage(studentName: '', studentId: ''),
+                  ),
+                ),
+                buildServiceButton(
+                  icon: Icons.language,
+                  title: "Web",
+                  url: "https://uoc.ac.in/",
+                ),
+                buildServiceButton(
+                  icon: Icons.menu_book,
+                  title: "Notes",
+                  url: "https://sde.uoc.ac.in/?q=content/study-material",
+                ),
+                buildServiceButton(
+                  icon: Icons.campaign_sharp,
+                  title: "Result",
+                  url: "https://results.uoc.ac.in/",
+                ),
+              ],
+            ),
+            const SizedBox(height: 100),
 
             const SizedBox(height: 80),
           ],

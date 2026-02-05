@@ -199,31 +199,28 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         final ref = FirebaseFirestore.instance
             .collection("attendance")
             .doc(stuId);
-
         batch.set(ref, {selectedDateString: value}, SetOptions(merge: true));
       });
 
       await batch.commit();
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.snackbar(
-          "Success",
-          "Attendance saved!",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-      });
+      // REMOVED addPostFrameCallback - GetX handles its own timing
+      Get.snackbar(
+        "Success",
+        "Attendance saved!",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
     } catch (e) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.snackbar(
-          "Error",
-          "Failed to save attendance",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-      });
+      Get.snackbar(
+        "Error",
+        "Failed to save: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 }
