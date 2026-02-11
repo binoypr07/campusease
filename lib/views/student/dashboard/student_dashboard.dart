@@ -1,17 +1,17 @@
 import 'package:campusease/views/aboutus/about_us_page.dart';
 import 'package:campusease/views/chat/global_chat_screen.dart';
-import 'package:campusease/views/feepayment/fee_payment_page.dart';
+import 'package:campusease/views/feepayment/student_fee_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'qr.dart';
-import 'timetable_page.dart';
-import 'feedback_page.dart';
-import 'polls_page.dart';
-import 'student_internal_marks.dart';
-import '../ai/library_page.dart';
+import '../qr/qr.dart';
+import '../timetable/timetable_page.dart';
+import '../feedback/feedback_page.dart';
+import '../poll/polls_page.dart';
+import '../internal/student_internal_marks.dart';
+import '../../ai/library_page.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -420,13 +420,60 @@ class _StudentDashboardState extends State<StudentDashboard>
                     buildServiceButton(
                       icon: Icons.account_balance_wallet,
                       title: "Fees",
-                      url: "", // You can leave this empty
-                      onTap: () => Get.to(
-                        () => FeePaymentPage(
-                          studentName: studentName,
-                          studentId: studentId,
-                        ),
-                      ),
+                      onTap: () async {
+                        // 1. Show a loading indicator
+                        Get.dialog(
+                          const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.blueAccent,
+                            ),
+                          ),
+                          barrierDismissible: false,
+                        );
+
+                        try {
+                          // 2. Fetch current student's data
+                          String uid = FirebaseAuth.instance.currentUser!.uid;
+                          DocumentSnapshot userDoc = await FirebaseFirestore
+                              .instance
+                              .collection('users')
+                              .doc(uid)
+                              .get();
+
+                          Get.back(); // Close loading indicator
+
+                          if (userDoc.exists) {
+                            // Ensure we are using 'classYear' for students
+                            String studentClass =
+                                userDoc.get('classYear') ?? "";
+                            String studentName =
+                                userDoc.get('name') ?? "Student";
+                            String admissionNo =
+                                userDoc.get('admissionNumber') ?? "N/A";
+
+                            if (studentClass.isNotEmpty) {
+                              // 3. Navigate only if class is found
+                              Get.to(
+                                () => FeePaymentPage(
+                                  studentName: studentName,
+                                  studentId: admissionNo,
+                                  classYear: studentClass,
+                                ),
+                              );
+                            } else {
+                              Get.snackbar(
+                                "Profile Incomplete",
+                                "Your class year is not set. Please update your profile.",
+                                backgroundColor: Colors.orange,
+                                colorText: Colors.white,
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          Get.back();
+                          Get.snackbar("Error", "Could not fetch profile: $e");
+                        }
+                      },
                     ),
                     buildServiceButton(
                       icon: Icons.language,

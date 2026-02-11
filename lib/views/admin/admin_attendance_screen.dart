@@ -97,10 +97,11 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
   // ---------------- CORE FIX ----------------
 
   Future<void> loadAllAttendance() async {
+    setState(() => loading = true);
     allStudentAttendance.clear();
     allDates.clear();
 
-    Set<String> dateSet = {}; // collect ALL dates
+    Set<String> dateSet = {};
 
     for (var s in students) {
       var doc = await _db.collection('attendance').doc(s['id']).get();
@@ -113,7 +114,7 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
           final d = DateFormat('yyyy-MM-dd').parse(k);
           if (d.year == selectedYear && d.month == selectedMonth) {
             filtered[k] = v;
-            dateSet.add(k); // collect all dates across students
+            dateSet.add(k);
           }
         } catch (_) {}
       });
@@ -124,21 +125,28 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
       };
     }
 
-    allDates = dateSet.toList()..sort(); // sorted list of all dates
-    setState(() {});
+    allDates = dateSet.toList()..sort();
+    setState(() => loading = false);
   }
 
   // ---------------- PDF EXPORT ----------------
 
   Future<void> exportClassPDF() async {
     final pdf = pw.Document();
+    final monthName = DateFormat(
+      'MMMM yyyy',
+    ).format(DateTime(selectedYear, selectedMonth));
 
     pdf.addPage(
       pw.Page(
         build: (_) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text("Class Attendance CS3", style: pw.TextStyle(fontSize: 18)),
+            pw.Text(
+              "Attendance Report: $selectedClass",
+              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text("Period: $monthName", style: pw.TextStyle(fontSize: 14)),
             pw.SizedBox(height: 10),
             pw.Table.fromTextArray(
               headers: [
@@ -170,6 +178,13 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
     await Printing.layoutPdf(onLayout: (_) => pdf.save());
   }
 
+  // Helper for Cell Color
+  Color _getStatusColor(dynamic value) {
+    if (value == 1) return Colors.green.shade700;
+    if (value == 0.5) return Colors.orange.shade700;
+    return Colors.red.shade700;
+  }
+
   // ---------------- BUILD ----------------
 
   @override
@@ -191,54 +206,130 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: "Department"),
-                    value: selectedDepartment,
-                    items: departments
-                        .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                        .toList(),
-                    onChanged: (v) async {
-                      selectedDepartment = v;
-                      selectedClass = null;
-                      students.clear();
-                      allStudentAttendance.clear();
-                      await loadClasses(v!);
-                      setState(() {});
-                    },
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: "Department",
+                        ),
+                        value: selectedDepartment,
+                        items: departments
+                            .map(
+                              (d) => DropdownMenuItem(value: d, child: Text(d)),
+                            )
+                            .toList(),
+                        onChanged: (v) async {
+                          selectedDepartment = v;
+                          selectedClass = null;
+                          students.clear();
+                          allStudentAttendance.clear();
+                          await loadClasses(v!);
+                          setState(() {});
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      if (classes.isNotEmpty)
+                        DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(labelText: "Class"),
+                          value: selectedClass,
+                          items: classes
+                              .map(
+                                (c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)),
+                              )
+                              .toList(),
+                          onChanged: (v) async {
+                            selectedClass = v;
+                            await loadStudents(selectedDepartment!, v!);
+                          },
+                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<int>(
+                              decoration: const InputDecoration(
+                                labelText: "Select Month",
+                              ),
+                              value: selectedMonth,
+                              items: List.generate(12, (index) => index + 1)
+                                  .map((m) {
+                                    return DropdownMenuItem(
+                                      value: m,
+                                      child: Text(
+                                        DateFormat(
+                                          'MMMM',
+                                        ).format(DateTime(2024, m)),
+                                      ),
+                                    );
+                                  })
+                                  .toList(),
+                              onChanged: (v) {
+                                setState(() => selectedMonth = v!);
+                                if (selectedClass != null) loadAllAttendance();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: DropdownButtonFormField<int>(
+                              decoration: const InputDecoration(
+                                labelText: "Select Year",
+                              ),
+                              value: selectedYear,
+                              items:
+                                  [
+                                    DateTime.now().year,
+                                    DateTime.now().year - 1,
+                                  ].map((y) {
+                                    return DropdownMenuItem(
+                                      value: y,
+                                      child: Text(y.toString()),
+                                    );
+                                  }).toList(),
+                              onChanged: (v) {
+                                setState(() => selectedYear = v!);
+                                if (selectedClass != null) loadAllAttendance();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  if (classes.isNotEmpty)
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: "Class"),
-                      value: selectedClass,
-                      items: classes
-                          .map(
-                            (c) => DropdownMenuItem(value: c, child: Text(c)),
-                          )
-                          .toList(),
-                      onChanged: (v) async {
-                        selectedClass = v;
-                        await loadStudents(selectedDepartment!, v!);
-                      },
-                    ),
-                  const SizedBox(height: 12),
-                  if (allDates.isNotEmpty)
-                    Expanded(
+                ),
+
+                // Scrollable Table Area
+                if (allDates.isNotEmpty)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(
+                            const Color.fromARGB(255, 7, 7, 7),
+                          ),
                           columns: [
-                            const DataColumn(label: Text("Student")),
+                            const DataColumn(
+                              label: Text(
+                                "Student",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
                             ...allDates.map(
                               (d) => DataColumn(
                                 label: Text(
                                   DateFormat(
                                     'dd MMM',
                                   ).format(DateTime.parse(d)),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
@@ -259,6 +350,10 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
                                           : v == 0.5
                                           ? "H"
                                           : "A",
+                                      style: TextStyle(
+                                        color: _getStatusColor(v),
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   );
                                 }),
@@ -268,8 +363,12 @@ class _AdminAttendanceScreenState extends State<AdminAttendanceScreen> {
                         ),
                       ),
                     ),
-                ],
-              ),
+                  )
+                else if (selectedClass != null && !loading)
+                  const Expanded(
+                    child: Center(child: Text("No attendance records found.")),
+                  ),
+              ],
             ),
     );
   }

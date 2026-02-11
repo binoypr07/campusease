@@ -9,7 +9,9 @@ class MessageModel {
   final DateTime timestamp;
   final String status;
   final String? replyTo;
-  final List<String> seenBy; // New field to track group read receipts
+  final List<String> seenBy;
+  final String messageType; // NEW: 'text' or 'voice'
+  final int? voiceDuration; // NEW: Duration in seconds for voice messages
 
   MessageModel({
     this.id,
@@ -20,7 +22,9 @@ class MessageModel {
     required this.timestamp,
     this.status = 'sent',
     this.replyTo,
-    this.seenBy = const [], // Initialize as empty list
+    this.seenBy = const [],
+    this.messageType = 'text', // NEW: Default to 'text'
+    this.voiceDuration, // NEW: Optional voice duration
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map, {required String id}) {
@@ -30,11 +34,14 @@ class MessageModel {
       senderName: map['senderName'] ?? '',
       senderRole: map['senderRole'] ?? 'student',
       message: map['message'] ?? '',
-      timestamp: (map['timestamp'] as Timestamp).toDate(),
+      timestamp: map['timestamp'] != null
+          ? (map['timestamp'] as Timestamp).toDate()
+          : DateTime.now(),
       status: map['status'] ?? 'sent',
       replyTo: map['replyTo'],
-      // Correctly convert Firestore list to Dart List<String>
       seenBy: List<String>.from(map['seenBy'] ?? []),
+      messageType: map['messageType'] ?? 'text', // NEW
+      voiceDuration: map['voiceDuration'], // NEW
     );
   }
 
@@ -47,7 +54,9 @@ class MessageModel {
       'timestamp': timestamp,
       'status': status,
       'replyTo': replyTo,
-      'seenBy': seenBy, // Save the list of viewers
+      'seenBy': seenBy,
+      'messageType': messageType, // NEW
+      'voiceDuration': voiceDuration, // NEW
     };
   }
 }

@@ -1,9 +1,10 @@
+import 'package:campusease/views/admin/AdminInternalMarksScreen.dart';
 import 'package:campusease/views/splash/splash_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:http/http.dart' as http;
-import 'firebase_options.dart';
+import 'core/services/firebase_options.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -12,22 +13,21 @@ import 'core/services/notification_handler.dart';
 // ROUTES
 import 'views/admin/admin_dashboard.dart';
 import 'views/admin/pending_users.dart';
-import 'views/teacher/teacher_dashboard.dart';
-import 'views/student/student_dashboard.dart';
+import 'views/teacher/dashboard/teacher_dashboard.dart';
+import 'views/student/dashboard/student_dashboard.dart';
 import 'views/auth/login_screen.dart';
 import 'views/auth/check_role.dart';
 import 'views/auth/register_student.dart';
 import 'views/auth/register_teacher.dart';
-import 'views/teacher/assign_class.dart';
-import 'views/teacher/attendence_screen.dart';
-import 'views/teacher/teacher_profile.dart';
-import 'views/teacher/approve_students.dart';
-import 'views/student/student_profile.dart';
-import 'views/student/student_attendence.dart';
-import 'views/student/student_info.dart';
+import 'views/teacher/student aproval/assign_class.dart';
+import 'views/teacher/attendance/attendence_screen.dart';
+import 'views/teacher/profile/teacher_profile.dart';
+import 'views/teacher/student aproval/approve_students.dart';
+import 'views/student/profile/student_profile.dart';
+import 'views/student/attendance/student_attendence.dart';
 import 'views/admin/admin_announcements.dart';
-import 'views/teacher/teacher_announcements.dart';
-import 'views/student/student_announcements.dart';
+import 'views/teacher/annoucement/teacher_announcements.dart';
+import 'views/student/annoucement/student_announcements.dart';
 import 'views/admin/admin_students_list.dart';
 import 'views/admin/admin_teacher_list.dart';
 import 'views/admin/admin_attendance_screen.dart';
@@ -196,7 +196,7 @@ class MyApp extends StatelessWidget {
           name: '/studentAttendance',
           page: () => StudentAttendanceScreen(),
         ),
-        GetPage(name: '/studentInfo', page: () => const StudentInfoPage()),
+
         GetPage(
           name: '/studentAnnouncements',
           page: () => const StudentAnnouncementsScreen(),
@@ -206,6 +206,10 @@ class MyApp extends StatelessWidget {
           page: () => const AdminAttendanceScreen(),
         ),
         GetPage(name: '/', page: () => const SplashScreen()),
+        GetPage(
+          name: '/internalmark',
+          page: () => const AdminInternalMarksScreen(),
+        ),
       ],
 
       home: const SplashScreen(),

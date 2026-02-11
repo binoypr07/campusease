@@ -1,4 +1,5 @@
 import 'package:campusease/views/aboutus/about_us_page.dart';
+import 'package:campusease/views/admin/AdminInternalMarksScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -95,6 +96,15 @@ class AdminDashboard extends StatelessWidget {
               subtitle: "Daily / Monthly / Semester",
               onTap: () {
                 Get.toNamed('/adminAttendance');
+              },
+            ),
+            // ------------------- INTERNAL MARKS -------------------
+            buildCard(
+              icon: Icons.grade, // Changed to a marks-specific icon
+              title: "Internal Marks",
+              subtitle: "Consolidated Class Reports",
+              onTap: () {
+                Get.to(() => const AdminInternalMarksScreen());
               },
             ),
 

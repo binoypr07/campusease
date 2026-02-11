@@ -1,3 +1,4 @@
+import 'package:campusease/views/student/internal/ClassInternalMarksView.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -203,6 +204,21 @@ class _InternalMarksPageState extends State<InternalMarksPage> {
       appBar: AppBar(
         title: const Text('Enter Internal Marks'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.table_chart_rounded),
+            tooltip: 'View All Marks',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      ClassInternalMarksView(className: widget.className),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: loadingStudents
           ? const Center(child: CircularProgressIndicator())
@@ -247,7 +263,6 @@ class _InternalMarksPageState extends State<InternalMarksPage> {
                     ),
                   ),
 
-                  // Add row + Save buttons
                   Row(
                     children: [
                       ElevatedButton.icon(
@@ -256,7 +271,8 @@ class _InternalMarksPageState extends State<InternalMarksPage> {
                         label: const Text('Add Subject'),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      SizedBox(
+                        width: 800,
                         child: ElevatedButton(
                           onPressed: saving ? null : _saveMarks,
                           child: saving
@@ -268,7 +284,9 @@ class _InternalMarksPageState extends State<InternalMarksPage> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text('Save All Marks'),
+                              : const Text(
+                                  'Save All',
+                                ), // Shortened text also helps
                         ),
                       ),
                     ],
@@ -276,6 +294,20 @@ class _InternalMarksPageState extends State<InternalMarksPage> {
                 ],
               ),
             ),
+      // PLACE IT HERE, AFTER THE BODY
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  ClassInternalMarksView(className: widget.className),
+            ),
+          );
+        },
+        label: const Text('View Class Marks'),
+        icon: const Icon(Icons.table_view),
+      ),
     );
   }
 }

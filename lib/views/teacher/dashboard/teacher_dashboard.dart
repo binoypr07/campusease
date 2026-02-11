@@ -1,18 +1,19 @@
 import 'package:campusease/views/aboutus/about_us_page.dart';
 import 'package:campusease/views/chat/global_chat_screen.dart';
-import 'package:campusease/views/feepayment/fee_payment_page.dart';
+import 'package:campusease/views/feepayment/student_fee_screen.dart';
 import 'package:campusease/views/ai/library_page.dart';
+import 'package:campusease/views/feepayment/teacher_fee_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'editable_timetable_page.dart';
-import 'teacher_feedback_page.dart';
-import 'poll/teacherPollPage.dart';
-import 'poll/teacher_poll_results.dart' as pollResults;
-import ' internal_marks_page.dart';
+import '../timetable/editable_timetable_page.dart';
+import '../feedback/teacher_feedback_page.dart';
+import '../poll/teacherPollPage.dart';
+import '../poll/teacher_poll_results.dart' as pollResults;
+import '../internal/ internal_marks_page.dart';
 
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
@@ -82,8 +83,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   Widget buildServiceButton({
     required IconData icon,
     required String title,
-    String? url, 
-    VoidCallback? onTap, 
+    String? url,
+    VoidCallback? onTap,
   }) {
     return Expanded(
       child: GestureDetector(
@@ -329,10 +330,22 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 buildServiceButton(
                   icon: Icons.account_balance_wallet,
                   title: "Fees",
-                  url: "", 
-                  onTap: () => Get.to(
-                    () => FeePaymentPage(studentName: '', studentId: ''),
-                  ),
+                  onTap: () {
+                    // assignedClass comes from your Firestore loadTeacherClass() method
+                    if (assignedClass != null && assignedClass!.isNotEmpty) {
+                      Get.to(
+                        () =>
+                            TeacherFeeSetupPage(assignedClass: assignedClass!),
+                      );
+                    } else {
+                      Get.snackbar(
+                        "Notice",
+                        "No class assigned yet. Please contact Admin.",
+                        backgroundColor: Colors.orange,
+                        colorText: Colors.white,
+                      );
+                    }
+                  },
                 ),
                 buildServiceButton(
                   icon: Icons.language,

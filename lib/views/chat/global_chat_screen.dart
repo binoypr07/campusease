@@ -1,12 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:campusease/views/chat/members_list_screen.dart';
+import 'package:campusease/views/chat/voicechat/voice_message_player.dart';
+import 'package:campusease/views/chat/voicechat/voice_recorder_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../../models/message_model.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class GlobalChatScreen extends StatefulWidget {
   final String classId;
@@ -28,12 +34,13 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
   MessageModel? editingMessage;
   MessageModel? replyingMessage;
   String? fieldError;
+  bool isRecording = false;
 
   @override
   void initState() {
     super.initState();
     _loadCurrentUser();
-    // Wake up the Render server immediately on screen load
+    _setupWhatsAppNotifications();
     syncWithRender("System_Wakeup", "User_Entry");
   }
 
@@ -43,6 +50,15 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
     messageController.dispose();
     scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _setupWhatsAppNotifications() async {
+    try {
+      String topicName = widget.classId.replaceAll(' ', '_');
+      await FirebaseMessaging.instance.subscribeToTopic(topicName);
+    } catch (e) {
+      print("Error subscribing to topic: $e");
+    }
   }
 
   Future<void> _loadCurrentUser() async {
@@ -80,19 +96,45 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
   Future<void> syncWithRender(String msg, String senderName) async {
     final url = Uri.parse('https://shade-0pxb.onrender.com/users');
     try {
+      await http
+          .post(
+            url,
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "sender": senderName,
+              "text": msg,
+              "classId": widget.classId,
+              "time": DateTime.now().toIso8601String(),
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      print("Render Sync: Success");
+    } catch (e) {
+      print("Render Sync: Server is waking up or offline. (Ignoring error)");
+    }
+  }
+
+  Future<void> _sendWhatsAppStyleNotification(String messageText) async {
+    final url = Uri.parse('https://shade-0pxb.onrender.com/notification');
+    String topicName = widget.classId.replaceAll(' ', '_');
+
+    try {
       await http.post(
         url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "sender": senderName,
-          "text": msg,
-          "classId": widget.classId,
-          "time": DateTime.now().toIso8601String(),
+          "from": "CampusEase",
+          "to": "/topics/$topicName",
+          "title": widget.classId,
+          "body": "$name: $messageText",
+          "data": {
+            "classId": widget.classId,
+            "click_action": "FLUTTER_NOTIFICATION_CLICK",
+          },
         }),
       );
-      print("Sent to Render successfully");
     } catch (e) {
-      print("Render server is likely asleep or error: $e");
+      print("Failed to send WhatsApp notification: $e");
     }
   }
 
@@ -105,7 +147,6 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
     );
   }
 
-  // FIXED: Instant clearing logic
   void sendMessage() {
     String msg = messageController.text.trim();
 
@@ -117,10 +158,8 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
       return;
     }
 
-    // 1. CLEAR IMMEDIATELY (Feels instant to user)
     messageController.clear();
 
-    // 2. CAPTURE DATA & RESET UI STATE
     final tempReplyingMessage = replyingMessage;
     final tempEditingMessage = editingMessage;
 
@@ -130,7 +169,6 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
       fieldError = null;
     });
 
-    // 3. RUN DATABASE UPDATE IN BACKGROUND (No 'await' here to prevent UI lag)
     if (tempEditingMessage != null) {
       FirebaseFirestore.instance
           .collection('class_chats')
@@ -139,7 +177,6 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
           .doc(tempEditingMessage.id)
           .update({'message': msg});
 
-      // Sync edit to Render
       syncWithRender("(Edited) $msg", name);
     } else {
       FirebaseFirestore.instance
@@ -155,10 +192,62 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
             'status': 'delivered',
             'replyTo': tempReplyingMessage?.message,
             'seenBy': [uid],
+            'messageType': 'text',
           });
 
-      // Sync new message to Render
       syncWithRender(msg, name);
+      _sendWhatsAppStyleNotification(msg);
+    }
+  }
+
+  // Send voice message
+  Future<void> sendVoiceMessage(String audioPath, int duration) async {
+    try {
+      // Show a loading indicator if you want, or just log it
+      debugPrint("DEBUG: Preparing to upload $audioPath");
+
+      final storageRef = FirebaseStorage.instance.ref().child(
+        'voice_messages/${widget.classId}/${DateTime.now().millisecondsSinceEpoch}.m4a',
+      );
+
+      if (kIsWeb) {
+        final response = await http.get(Uri.parse(audioPath));
+        await storageRef.putData(
+          response.bodyBytes,
+          SettableMetadata(contentType: 'audio/mpeg'),
+        );
+      } else {
+        // ON ANDROID: Verify file exists
+        File file = File(audioPath);
+        if (await file.exists()) {
+          // Use putFile and wait for it to complete
+          await storageRef.putFile(file);
+        } else {
+          debugPrint("DEBUG ERROR: File not found at path");
+          return;
+        }
+      }
+
+      final voiceUrl = await storageRef.getDownloadURL();
+
+      // Add to Firestore
+      await FirebaseFirestore.instance
+          .collection('class_chats')
+          .doc(widget.classId)
+          .collection('messages')
+          .add({
+            'senderId': uid,
+            'senderName': name,
+            'message': voiceUrl,
+            'messageType': 'voice', // This is what VoiceMessagePlayer looks for
+            'voiceDuration': duration,
+            'timestamp': FieldValue.serverTimestamp(),
+            'seenBy': [uid],
+          });
+
+      debugPrint("DEBUG: Firestore message sent!");
+    } catch (e) {
+      debugPrint("DEBUG SEND ERROR: $e");
     }
   }
 
@@ -250,13 +339,14 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
               title: Text("Info", style: TextStyle(color: Colors.white)),
             ),
           ),
-          const PopupMenuItem(
-            value: 'edit',
-            child: ListTile(
-              leading: Icon(Icons.edit, color: Colors.white),
-              title: Text("Edit", style: TextStyle(color: Colors.white)),
+          if (msg.messageType != 'voice')
+            const PopupMenuItem(
+              value: 'edit',
+              child: ListTile(
+                leading: Icon(Icons.edit, color: Colors.white),
+                title: Text("Edit", style: TextStyle(color: Colors.white)),
+              ),
             ),
-          ),
           const PopupMenuItem(
             value: 'delete',
             child: ListTile(
@@ -339,8 +429,9 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
                 final docs = snapshot.data!.docs;
                 return ListView.builder(
                   reverse: true,
@@ -363,6 +454,8 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
                           DateTime.now(),
                       status: data['status'] ?? 'delivered',
                       replyTo: data['replyTo'],
+                      messageType: data['messageType'] ?? 'text',
+                      voiceDuration: data['voiceDuration'],
                     );
                     return SwipeToReplyItem(
                       message: msg,
@@ -378,7 +471,16 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
             ),
           ),
           if (replyingMessage != null) _buildReplyPreview(),
-          _buildMessageInput(),
+          if (isRecording)
+            VoiceRecorderWidget(
+              onCancel: () => setState(() => isRecording = false),
+              onSend: (path, duration) {
+                setState(() => isRecording = false);
+                sendVoiceMessage(path, duration);
+              },
+            )
+          else
+            _buildMessageInput(),
         ],
       ),
     );
@@ -411,7 +513,9 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
                     ),
                   ),
                   Text(
-                    replyingMessage!.message,
+                    replyingMessage!.messageType == 'voice'
+                        ? '🎤 Voice message'
+                        : replyingMessage!.message,
                     style: const TextStyle(color: Colors.white60),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -430,6 +534,9 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
   }
 
   Widget _buildMessageInput() {
+    // Check if the text field is empty to decide which icon to show
+    bool isTextEmpty = messageController.text.trim().isEmpty;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: const BoxDecoration(
@@ -443,17 +550,12 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
             child: TextField(
               controller: messageController,
               focusNode: messageFocusNode,
+              // THIS IS KEY: Updates the UI instantly as the user types
+              onChanged: (value) => setState(() {}),
               maxLines: 5,
               minLines: 1,
-              keyboardType: TextInputType.multiline,
               style: const TextStyle(color: Colors.white, fontSize: 16),
               decoration: InputDecoration(
-                errorText: fieldError,
-                errorStyle: const TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 10,
-                  height: 0.1,
-                ),
                 hintText: "Type a message...",
                 hintStyle: const TextStyle(color: Colors.white38),
                 filled: true,
@@ -470,28 +572,21 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            margin: const EdgeInsets.only(bottom: 2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blueAccent.withOpacity(0.3),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
+          GestureDetector(
+            onTap: () {
+              if (isTextEmpty) {
+                setState(() => isRecording = true);
+              } else {
+                sendMessage();
+              }
+            },
             child: CircleAvatar(
               radius: 24,
-              backgroundColor: Colors.blueAccent,
-              child: IconButton(
-                icon: Icon(
-                  editingMessage != null ? Icons.check : Icons.send,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onPressed: sendMessage,
+              backgroundColor: const Color(0xFF00A884), // WhatsApp Green
+              child: Icon(
+                isTextEmpty ? Icons.mic : Icons.send,
+                color: Colors.white,
+                size: 24,
               ),
             ),
           ),
@@ -571,8 +666,9 @@ class _SwipeToReplyItemState extends State<SwipeToReplyItem>
       onHorizontalDragEnd: _onHorizontalDragEnd,
       onTapDown: (details) => _tapDetails = details,
       onLongPress: () {
-        if (_tapDetails != null)
+        if (_tapDetails != null) {
           widget.onLongPress(_tapDetails!, widget.message);
+        }
       },
       child: Stack(
         children: [
@@ -650,10 +746,21 @@ class _SwipeToReplyItemState extends State<SwipeToReplyItem>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    Text(
-                      widget.message.message,
-                      style: const TextStyle(color: Colors.white, fontSize: 15),
-                    ),
+                    // Voice or Text message
+                    if (widget.message.messageType == 'voice')
+                      VoiceMessagePlayer(
+                        voiceUrl: widget.message.message,
+                        duration: widget.message.voiceDuration ?? 0,
+                        isMe: widget.isMe,
+                      )
+                    else
+                      Text(
+                        widget.message.message,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
+                      ),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,

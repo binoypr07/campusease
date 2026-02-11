@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../student/time_table_entry.dart';
-import '../student/timetable_card.dart';
+import '../../student/timetable/time_table_entry.dart';
+import '../../student/timetable/timetable_card.dart';
 
 class EditableTimetablePage extends StatefulWidget {
   final String className;
