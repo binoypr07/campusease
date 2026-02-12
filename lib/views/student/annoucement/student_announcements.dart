@@ -1,10 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart'; // Add this
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
-import 'package:get/get_navigation/src/snackbar/snackbar.dart';
+import 'package:get/get.dart';
 
 class StudentAnnouncementsScreen extends StatefulWidget {
   const StudentAnnouncementsScreen({super.key});
@@ -17,7 +15,6 @@ class StudentAnnouncementsScreen extends StatefulWidget {
 class _StudentAnnouncementsScreenState
     extends State<StudentAnnouncementsScreen> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance; // Instance for FCM
   final String uid = FirebaseAuth.instance.currentUser!.uid;
 
   String? classYear;
@@ -27,58 +24,73 @@ class _StudentAnnouncementsScreenState
   @override
   void initState() {
     super.initState();
-    load();
-    _setupNotifications(); // Initialize notification listeners
+    _loadAndSetup();
   }
 
-  // 1. Setup Notification Permissions and Topic Subscriptions
+  // ─────────────────────────────────────────────────────────────────────────
+  // Load user data FIRST, then subscribe to the correct topics.
+  // Original bug: _setupNotifications() was called in initState() before
+  // classYear/department were loaded, so topic subscriptions were always null.
+  // ─────────────────────────────────────────────────────────────────────────
+  Future<void> _loadAndSetup() async {
+    final doc = await _db.collection("users").doc(uid).get();
+    classYear = doc.data()?["classYear"];
+    department = doc.data()?["department"];
+
+    setState(() => loading = false);
+
+    // Subscribe to topics only after data is loaded
+    await _setupNotifications();
+  }
+
   Future<void> _setupNotifications() async {
-    // Request permission (Required for iOS, good practice for Android 13+)
-    NotificationSettings settings = await _fcm.requestPermission(
+    // Request permission (required for iOS, good practice for Android 13+)
+    final settings = await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      // Once data is loaded, subscribe to topics
-      if (department != null) {
-        await _fcm.subscribeToTopic(department!.replaceAll(' ', '_'));
+      // Subscribe to department topic (e.g. "Computer_Science")
+      if (department != null && department!.isNotEmpty) {
+        await FirebaseMessaging.instance.subscribeToTopic(
+          department!.replaceAll(' ', '_'),
+        );
       }
-      if (classYear != null) {
-        await _fcm.subscribeToTopic(classYear!.replaceAll(' ', '_'));
+
+      // Subscribe to class topic (e.g. "CS1")
+      if (classYear != null && classYear!.isNotEmpty) {
+        await FirebaseMessaging.instance.subscribeToTopic(
+          classYear!.replaceAll(' ', '_'),
+        );
       }
-      // General topic for all students
-      await _fcm.subscribeToTopic("all");
+
+      // Subscribe to general "all" topic for college-wide announcements
+      await FirebaseMessaging.instance.subscribeToTopic("all");
     }
 
-    // Handle foreground notifications (while the app is open)
+    // Handle foreground notifications (app is open)
+    // Mirrors the onMessage listener pattern used in GlobalChatScreen
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (!mounted) return;
       if (message.notification != null) {
         Get.snackbar(
-          message.notification!.title ?? "Announcement",
+          message.notification!.title ?? "📢 Announcement",
           message.notification!.body ?? "",
           snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.blueAccent,
+          backgroundColor: const Color(0xFF1F2C34),
           colorText: Colors.white,
+          icon: const Icon(Icons.campaign, color: Colors.blueAccent),
+          duration: const Duration(seconds: 4),
         );
       }
     });
   }
 
-  Future<void> load() async {
-    var doc = await _db.collection("users").doc(uid).get();
-    classYear = doc["classYear"];
-    department = doc["department"];
-
-    // Re-trigger notification setup now that we have the class/dept info
-    _setupNotifications();
-
-    setState(() => loading = false);
-  }
-
   bool _filter(Map<String, dynamic> d) {
-    var t = d["target"];
+    final t = d["target"];
+    if (t == null) return false;
     if (t["type"] == "all") return true;
     if (t["type"] == "department" && t["value"] == department) return true;
     if (t["type"] == "class" && t["value"] == classYear) return true;
@@ -93,7 +105,7 @@ class _StudentAnnouncementsScreenState
 
     return Scaffold(
       appBar: AppBar(title: const Text("Announcements")),
-      body: StreamBuilder(
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _db
             .collection("announcements")
             .orderBy("createdAt", descending: true)
@@ -103,7 +115,7 @@ class _StudentAnnouncementsScreenState
             return const Center(child: CircularProgressIndicator());
           }
 
-          var filtered = snapshot.data!.docs
+          final filtered = snapshot.data!.docs
               .where((e) => _filter(e.data()))
               .toList();
 
@@ -115,10 +127,11 @@ class _StudentAnnouncementsScreenState
             padding: const EdgeInsets.all(12),
             itemCount: filtered.length,
             itemBuilder: (_, i) {
-              var d = filtered[i].data();
+              final d = filtered[i].data();
               return Card(
-                color: Colors.grey[900], // Dark theme to match teacher UI
+                color: Colors.grey[900],
                 child: ListTile(
+                  leading: const Icon(Icons.campaign, color: Colors.blueAccent),
                   title: Text(
                     d["title"] ?? "",
                     style: const TextStyle(
@@ -126,11 +139,24 @@ class _StudentAnnouncementsScreenState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  subtitle: Text(
-                    d["body"] ?? "",
-                    style: const TextStyle(color: Colors.white70),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        d["body"] ?? "",
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      if (d["createdByName"] != null)
+                        Text(
+                          "By: ${d["createdByName"]}",
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 11,
+                          ),
+                        ),
+                    ],
                   ),
-                  leading: const Icon(Icons.campaign, color: Colors.blue),
+                  isThreeLine: d["createdByName"] != null,
                 ),
               );
             },

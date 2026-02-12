@@ -22,7 +22,8 @@ class GlobalChatScreen extends StatefulWidget {
   State<GlobalChatScreen> createState() => _GlobalChatScreenState();
 }
 
-class _GlobalChatScreenState extends State<GlobalChatScreen> {
+class _GlobalChatScreenState extends State<GlobalChatScreen>
+    with WidgetsBindingObserver {
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
   final FocusNode messageFocusNode = FocusNode();
@@ -35,21 +36,58 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
   MessageModel? replyingMessage;
   String? fieldError;
   bool isRecording = false;
+  bool isUserInChat = false; // Track if user is actively in this chat
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Add lifecycle observer
     _loadCurrentUser();
     _setupWhatsAppNotifications();
+    _markUserInChat(true); // Mark user as in chat
     syncWithRender("System_Wakeup", "User_Entry");
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Remove lifecycle observer
+    _markUserInChat(false); // Mark user as left chat
     messageFocusNode.dispose();
     messageController.dispose();
     scrollController.dispose();
     super.dispose();
+  }
+
+  // Handle app lifecycle changes (background/foreground)
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _markUserInChat(true); // User returned to app
+    } else if (state == AppLifecycleState.paused) {
+      _markUserInChat(false); // User left app
+    }
+  }
+
+  // Mark user presence in this specific chat
+  Future<void> _markUserInChat(bool inChat) async {
+    if (uid.isEmpty) return;
+
+    setState(() {
+      isUserInChat = inChat;
+    });
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('user_chat_status')
+          .doc(uid)
+          .set({
+            'currentChatId': inChat ? widget.classId : null,
+            'timestamp': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+    } catch (e) {
+      print("Error updating chat status: $e");
+    }
   }
 
   Future<void> _setupWhatsAppNotifications() async {
@@ -75,6 +113,29 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
         name = userDoc.data()?['name'] ?? 'Unknown';
         role = userDoc.data()?['role'] ?? 'student';
         userDept = userDoc.data()?['department'] ?? '';
+      });
+      _markUserInChat(true);
+    }
+
+    // ✅ Count unique members who have EVER sent a message in this chat
+    final messagesSnapshot = await FirebaseFirestore.instance
+        .collection('class_chats')
+        .doc(widget.classId)
+        .collection('messages')
+        .get();
+
+    // Get all unique sender IDs
+    final uniqueMembers = <String>{};
+    for (var doc in messagesSnapshot.docs) {
+      final senderId = doc.data()['senderId'];
+      if (senderId != null && senderId.isNotEmpty) {
+        uniqueMembers.add(senderId);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        var _totalMembers = uniqueMembers.length > 0 ? uniqueMembers.length : 2;
       });
     }
   }
@@ -114,6 +175,7 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
     }
   }
 
+  // MODIFIED: Check if recipient is in the chat before sending notification
   Future<void> _sendWhatsAppStyleNotification(String messageText) async {
     final url = Uri.parse('https://shade-0pxb.onrender.com/notification');
     String topicName = widget.classId.replaceAll(' ', '_');
@@ -129,6 +191,7 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
           "body": "$name: $messageText",
           "data": {
             "classId": widget.classId,
+            "senderId": uid, // Add sender ID
             "click_action": "FLUTTER_NOTIFICATION_CLICK",
           },
         }),
@@ -203,51 +266,66 @@ class _GlobalChatScreenState extends State<GlobalChatScreen> {
   // Send voice message
   Future<void> sendVoiceMessage(String audioPath, int duration) async {
     try {
-      // Show a loading indicator if you want, or just log it
-      debugPrint("DEBUG: Preparing to upload $audioPath");
+      // 1. CHANGE THESE TWO LINES
+      const String myCloudName = "";
+      const String myUploadPreset = "my_voice_preset";
 
-      final storageRef = FirebaseStorage.instance.ref().child(
-        'voice_messages/${widget.classId}/${DateTime.now().millisecondsSinceEpoch}.m4a',
+      // 2. This is the web address where the file goes
+      final url = Uri.parse(
+        "https://api.cloudinary.com/v1_1/$myCloudName/upload",
       );
 
+      // 3. Prepare the "package" (request)
+      var request = http.MultipartRequest("POST", url);
+
+      // 4. Tell Cloudinary which preset to use
+      request.fields['upload_preset'] = myUploadPreset;
+      request.fields['resource_type'] =
+          'video'; // Audio uses 'video' type in Cloudinary
+
+      // 5. Add the actual audio file to the package
       if (kIsWeb) {
         final response = await http.get(Uri.parse(audioPath));
-        await storageRef.putData(
-          response.bodyBytes,
-          SettableMetadata(contentType: 'audio/mpeg'),
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            response.bodyBytes,
+            filename: 'voice.m4a',
+          ),
         );
       } else {
-        // ON ANDROID: Verify file exists
-        File file = File(audioPath);
-        if (await file.exists()) {
-          // Use putFile and wait for it to complete
-          await storageRef.putFile(file);
-        } else {
-          debugPrint("DEBUG ERROR: File not found at path");
-          return;
-        }
+        request.files.add(await http.MultipartFile.fromPath('file', audioPath));
       }
 
-      final voiceUrl = await storageRef.getDownloadURL();
+      // 6. Send it!
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
 
-      // Add to Firestore
-      await FirebaseFirestore.instance
-          .collection('class_chats')
-          .doc(widget.classId)
-          .collection('messages')
-          .add({
-            'senderId': uid,
-            'senderName': name,
-            'message': voiceUrl,
-            'messageType': 'voice', // This is what VoiceMessagePlayer looks for
-            'voiceDuration': duration,
-            'timestamp': FieldValue.serverTimestamp(),
-            'seenBy': [uid],
-          });
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
 
-      debugPrint("DEBUG: Firestore message sent!");
+        // This 'secure_url' is the permanent link to your voice note!
+        String voiceUrl = responseData['secure_url'];
+
+        // 7. Save that link to Firebase Firestore
+        await FirebaseFirestore.instance
+            .collection('class_chats')
+            .doc(widget.classId)
+            .collection('messages')
+            .add({
+              'senderId': uid,
+              'senderName': name,
+              'message': voiceUrl, // <--- Link to Cloudinary
+              'messageType': 'voice',
+              'voiceDuration': duration,
+              'timestamp': FieldValue.serverTimestamp(),
+              'seenBy': [uid],
+            });
+
+        _sendWhatsAppStyleNotification("🎤 Voice message");
+      }
     } catch (e) {
-      debugPrint("DEBUG SEND ERROR: $e");
+      print("Error: $e");
     }
   }
 

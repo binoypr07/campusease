@@ -477,7 +477,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                     ),
                     buildServiceButton(
                       icon: Icons.language,
-                      title: "Web",
+                      title: "University",
                       url: "https://uoc.ac.in/",
                     ),
                     buildServiceButton(

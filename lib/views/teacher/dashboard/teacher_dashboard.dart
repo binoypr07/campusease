@@ -349,7 +349,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 ),
                 buildServiceButton(
                   icon: Icons.language,
-                  title: "Web",
+                  title: "University",
                   url: "https://uoc.ac.in/",
                 ),
                 buildServiceButton(

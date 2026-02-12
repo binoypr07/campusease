@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -16,8 +17,8 @@ class AdminAnnouncementsScreen extends StatefulWidget {
 class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final String uid = FirebaseAuth.instance.currentUser!.uid;
+  String? adminName;
 
-  // --- DATA LISTS ---
   final List<String> departments = [
     "Computer Science",
     "Physics",
@@ -48,47 +49,101 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
     "Botany": ["BOO1", "BOO2", "BOO3", "BOO4"],
   };
 
-  // ---------------- SYNC TO RENDER (FOR POPUP) ----------------
-  Future<void> syncAnnouncement(
-    String title,
-    String body,
-    String targetTopic,
-  ) async {
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminData();
+  }
+
+  Future<void> _loadAdminData() async {
+    final doc = await _db.collection("users").doc(uid).get();
+    adminName = doc.data()?["name"] ?? "Admin";
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RENDER WAKEUP  — calls /users only to keep the server alive
+  // ─────────────────────────────────────────────────────────────────────────
+  Future<void> _wakeUpRenderServer(String targetTopic) async {
     final url = Uri.parse('https://shade-0pxb.onrender.com/users');
+    try {
+      await http
+          .post(
+            url,
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "sender": "System_Wakeup",
+              "text": "Admin_Announcement_Entry",
+              "classId": targetTopic.isEmpty ? "all" : targetTopic,
+              "time": DateTime.now().toIso8601String(),
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (e) {
+      print("Render wakeup: Server waking up or offline. (Ignoring)");
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // REAL FCM NOTIFICATION — mirrors _sendWhatsAppStyleNotification exactly.
+  // For "all" target, sends to the "all" topic so every student receives it.
+  // ─────────────────────────────────────────────────────────────────────────
+  Future<void> _sendAnnouncementNotification({
+    required String title,
+    required String body,
+    required String targetType,
+    required String targetValue,
+  }) async {
+    // Determine the FCM topic:
+    //   "all"        → topic = "all"
+    //   "department" → topic = "Computer_Science" (spaces → underscores)
+    //   "class"      → topic = "CS1"
+    final String rawTopic = targetType == "all"
+        ? "all"
+        : targetValue.replaceAll(' ', '_');
+
+    final url = Uri.parse('https://shade-0pxb.onrender.com/notification');
     try {
       await http.post(
         url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "sender": "Admin Announcement",
-          "text": "$title: $body",
-          "classId": targetTopic.isEmpty ? "all" : targetTopic,
+          "from": "CampusEase",
+          "to": "/topics/$rawTopic", // ← same format as GlobalChatScreen
+          "title": "📢 $title",
+          "body": "${adminName ?? 'Admin'}: $body",
+          "data": {
+            "type": "announcement",
+            "targetType": targetType,
+            "targetValue": targetValue,
+            "senderId": uid,
+            "click_action": "FLUTTER_NOTIFICATION_CLICK",
+          },
         }),
       );
-      print("Admin Notification triggered successfully");
+      print("Admin announcement notification sent to topic: $rawTopic");
     } catch (e) {
-      print("Error syncing admin announcement: $e");
+      print("Failed to send admin announcement notification: $e");
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // CREATE / EDIT DIALOG
+  // ─────────────────────────────────────────────────────────────────────────
   Future<void> _openEditor({DocumentSnapshot? doc}) async {
-    TextEditingController titleC = TextEditingController(
-      text: doc?['title'] ?? '',
-    );
-    TextEditingController bodyC = TextEditingController(
-      text: doc?['body'] ?? '',
-    );
+    final titleC = TextEditingController(text: doc?['title'] ?? '');
+    final bodyC = TextEditingController(text: doc?['body'] ?? '');
 
     String targetType = doc != null ? doc['target']['type'] : 'all';
     String targetValue = doc != null ? doc['target']['value'] : '';
-
-    // For nested Class selection logic
     String? selectedDeptForClass;
+
+    // Wake up Render early so it is ready when the user hits Save
+    _wakeUpRenderServer(targetValue);
 
     await showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setDialogState) => AlertDialog(
           backgroundColor: Colors.black,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 24,
@@ -139,14 +194,14 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
                     DropdownMenuItem(value: "class", child: Text("Class")),
                   ],
                   onChanged: (v) {
-                    setState(() {
+                    setDialogState(() {
                       targetType = v!;
                       targetValue = '';
+                      selectedDeptForClass = null;
                     });
                   },
                 ),
 
-                // --- DYNAMIC SELECTION BASED ON TARGET TYPE ---
                 if (targetType == "department") ...[
                   const SizedBox(height: 25),
                   const Text(
@@ -160,7 +215,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
                     items: departments
                         .map((d) => DropdownMenuItem(value: d, child: Text(d)))
                         .toList(),
-                    onChanged: (v) => setState(() => targetValue = v!),
+                    onChanged: (v) => setDialogState(() => targetValue = v!),
                   ),
                 ],
 
@@ -178,9 +233,9 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
                         .map((d) => DropdownMenuItem(value: d, child: Text(d)))
                         .toList(),
                     onChanged: (v) {
-                      setState(() {
+                      setDialogState(() {
                         selectedDeptForClass = v;
-                        targetValue = ''; // Reset class when dept changes
+                        targetValue = '';
                       });
                     },
                   ),
@@ -202,7 +257,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
                             (c) => DropdownMenuItem(value: c, child: Text(c)),
                           )
                           .toList(),
-                      onChanged: (v) => setState(() => targetValue = v!),
+                      onChanged: (v) => setDialogState(() => targetValue = v!),
                     ),
                   ],
                 ],
@@ -219,16 +274,20 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (titleC.text.isEmpty || bodyC.text.isEmpty) return;
+                final title = titleC.text.trim();
+                final bodyText = bodyC.text.trim();
+                if (title.isEmpty || bodyText.isEmpty) return;
 
                 final payload = {
-                  "title": titleC.text.trim(),
-                  "body": bodyC.text.trim(),
+                  "title": title,
+                  "body": bodyText,
                   "createdByUid": uid,
+                  "createdByName": adminName,
                   "createdAt": FieldValue.serverTimestamp(),
                   "target": {"type": targetType, "value": targetValue},
                 };
 
+                // 1. Save / update Firestore
                 if (doc == null) {
                   await _db.collection("announcements").add(payload);
                 } else {
@@ -238,11 +297,14 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
                       .update(payload);
                 }
 
-                syncAnnouncement(
-                  titleC.text,
-                  bodyC.text,
-                  targetType == "all" ? "all" : targetValue,
+                // 2. Send real FCM push notification via /notification endpoint
+                await _sendAnnouncementNotification(
+                  title: title,
+                  body: bodyText,
+                  targetType: targetType,
+                  targetValue: targetValue,
                 );
+
                 Get.back();
               },
               child: const Text("Save"),
@@ -257,33 +319,48 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Announcements")),
-      body: StreamBuilder(
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _db
             .collection("announcements")
             .orderBy("createdAt", descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
-          var docs = snapshot.data!.docs;
+          final docs = snapshot.data!.docs;
 
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: docs.length,
             itemBuilder: (_, i) {
-              var d = docs[i].data() as Map<String, dynamic>;
+              final d = docs[i].data();
               return Card(
                 color: Colors.grey[900],
                 child: ListTile(
+                  leading: const Icon(Icons.campaign, color: Colors.blueAccent),
                   title: Text(
                     d["title"] ?? "",
                     style: const TextStyle(color: Colors.white),
                   ),
-                  subtitle: Text(
-                    d["body"] ?? "",
-                    style: const TextStyle(color: Colors.white70),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        d["body"] ?? "",
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      Text(
+                        "Target: ${d["target"]?["type"] == "all" ? "All" : d["target"]?["value"] ?? ""}",
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
+                  isThreeLine: true,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -292,11 +369,35 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
                         onPressed: () => _openEditor(doc: docs[i]),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.white),
-                        onPressed: () => _db
-                            .collection('announcements')
-                            .doc(docs[i].id)
-                            .delete(),
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text("Delete Announcement"),
+                            content: const Text(
+                              "Are you sure you want to delete this announcement?",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Get.back(),
+                                child: const Text("Cancel"),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  await _db
+                                      .collection('announcements')
+                                      .doc(docs[i].id)
+                                      .delete();
+                                  Get.back();
+                                },
+                                child: const Text(
+                                  "Delete",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -307,8 +408,8 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
         onPressed: () => _openEditor(),
+        child: const Icon(Icons.add),
       ),
     );
   }
