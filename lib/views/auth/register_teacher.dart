@@ -108,6 +108,23 @@ class _RegisterTeacherState extends State<RegisterTeacher> {
     "Zoology",
     "Botany",
   ];
+  // Inside _RegisterTeacherState
+  String? selectedClass; // Added this
+
+  final Map<String, List<String>> departmentClasses = {
+    "Computer Science": ["CS1", "CS2", "CS3", "CS4"],
+    "Physics": ["PHY1", "PHY2", "PHY3", "PHY4"],
+    "Chemistry": ["CHE1", "CHE2", "CHE3", "CHE4"],
+    "Maths": ["MAT1", "MAT2", "MAT3", "MAT4"],
+    "Commerce": ["BCOM1", "BCOM2", "BCOM3", "BCOM4"],
+    "Economics": ["ECO1", "ECO2", "ECO3", "ECO4"],
+    "Hindi": ["HIN1", "HIN2", "HIN3", "HIN4"],
+    "History": ["HIS1", "HIS2", "HIS3", "HIS4"],
+    "English": ["ENG1", "ENG2", "ENG3", "ENG4"],
+    "Malayalam": ["MAL1", "MAL2", "MAL3", "MAL4"],
+    "Zoology": ["ZOO1", "ZOO2", "ZOO3", "ZOO4"],
+    "Botany": ["BOO1", "BOO2", "BOO3", "BOO4"],
+  };
 
   FirebaseAuthService authService = FirebaseAuthService();
   bool loading = false;
@@ -121,6 +138,7 @@ class _RegisterTeacherState extends State<RegisterTeacher> {
         password.text.trim().isNotEmpty &&
         teacherId.text.trim().isNotEmpty &&
         selectedDept != null &&
+        selectedClass != null &&
         selectedSubjects.isNotEmpty;
   }
 
@@ -224,6 +242,33 @@ class _RegisterTeacherState extends State<RegisterTeacher> {
                   },
                 ),
                 const SizedBox(height: 20),
+                const Text(
+                  "Assign Class",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                DropdownButtonFormField<String>(
+                  value: selectedClass,
+                  dropdownColor: Colors.black,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(),
+                  items: selectedDept == null
+                      ? []
+                      : departmentClasses[selectedDept]!
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(
+                                  c,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  onChanged: (value) {
+                    setState(() => selectedClass = value);
+                  },
+                ),
+                const SizedBox(height: 20),
 
                 const Text(
                   "Select Subjects (Multiple)",
@@ -307,7 +352,7 @@ class _RegisterTeacherState extends State<RegisterTeacher> {
 
     Map<String, dynamic> extraData = {
       "subjects": selectedSubjects,
-      "assignedClass": null,
+      "assignedClass": selectedClass,
     };
 
     var created = await authService.registerUser(

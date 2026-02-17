@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:campusease/views/chat/members_list_screen.dart';
 import 'package:campusease/views/chat/voicechat/voice_message_player.dart';
 import 'package:campusease/views/chat/voicechat/voice_recorder_widget.dart';
@@ -8,11 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../../models/message_model.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:campusease/core/services/notification_handler.dart';
 
 class GlobalChatScreen extends StatefulWidget {
   final String classId;
@@ -36,40 +34,42 @@ class _GlobalChatScreenState extends State<GlobalChatScreen>
   MessageModel? replyingMessage;
   String? fieldError;
   bool isRecording = false;
-  bool isUserInChat = false; // Track if user is actively in this chat
+  bool isUserInChat = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // Add lifecycle observer
+    WidgetsBinding.instance.addObserver(this);
     _loadCurrentUser();
     _setupWhatsAppNotifications();
-    _markUserInChat(true); // Mark user as in chat
+    _markUserInChat(true);
+    NotificationHandler.setActiveChat(widget.classId);
     syncWithRender("System_Wakeup", "User_Entry");
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // Remove lifecycle observer
-    _markUserInChat(false); // Mark user as left chat
+    WidgetsBinding.instance.removeObserver(this);
+    _markUserInChat(false);
+    NotificationHandler.setActiveChat(null);
     messageFocusNode.dispose();
     messageController.dispose();
     scrollController.dispose();
     super.dispose();
   }
 
-  // Handle app lifecycle changes (background/foreground)
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      _markUserInChat(true); // User returned to app
+      _markUserInChat(true);
+      NotificationHandler.setActiveChat(widget.classId);
     } else if (state == AppLifecycleState.paused) {
-      _markUserInChat(false); // User left app
+      _markUserInChat(false);
+      NotificationHandler.setActiveChat(null);
     }
   }
 
-  // Mark user presence in this specific chat
   Future<void> _markUserInChat(bool inChat) async {
     if (uid.isEmpty) return;
 
@@ -117,14 +117,12 @@ class _GlobalChatScreenState extends State<GlobalChatScreen>
       _markUserInChat(true);
     }
 
-    // ✅ Count unique members who have EVER sent a message in this chat
     final messagesSnapshot = await FirebaseFirestore.instance
         .collection('class_chats')
         .doc(widget.classId)
         .collection('messages')
         .get();
 
-    // Get all unique sender IDs
     final uniqueMembers = <String>{};
     for (var doc in messagesSnapshot.docs) {
       final senderId = doc.data()['senderId'];
@@ -175,7 +173,7 @@ class _GlobalChatScreenState extends State<GlobalChatScreen>
     }
   }
 
-  // MODIFIED: Check if recipient is in the chat before sending notification
+  //  Check if recipient is in the chat before sending notification
   Future<void> _sendWhatsAppStyleNotification(String messageText) async {
     final url = Uri.parse('https://shade-0pxb.onrender.com/notification');
     String topicName = widget.classId.replaceAll(' ', '_');
@@ -266,24 +264,16 @@ class _GlobalChatScreenState extends State<GlobalChatScreen>
   // Send voice message
   Future<void> sendVoiceMessage(String audioPath, int duration) async {
     try {
-      // 1. CHANGE THESE TWO LINES
       const String myCloudName = "";
       const String myUploadPreset = "my_voice_preset";
-
-      // 2. This is the web address where the file goes
       final url = Uri.parse(
         "https://api.cloudinary.com/v1_1/$myCloudName/upload",
       );
 
-      // 3. Prepare the "package" (request)
       var request = http.MultipartRequest("POST", url);
 
-      // 4. Tell Cloudinary which preset to use
       request.fields['upload_preset'] = myUploadPreset;
-      request.fields['resource_type'] =
-          'video'; // Audio uses 'video' type in Cloudinary
-
-      // 5. Add the actual audio file to the package
+      request.fields['resource_type'] = 'video';
       if (kIsWeb) {
         final response = await http.get(Uri.parse(audioPath));
         request.files.add(
@@ -297,17 +287,14 @@ class _GlobalChatScreenState extends State<GlobalChatScreen>
         request.files.add(await http.MultipartFile.fromPath('file', audioPath));
       }
 
-      // 6. Send it!
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
 
-        // This 'secure_url' is the permanent link to your voice note!
         String voiceUrl = responseData['secure_url'];
 
-        // 7. Save that link to Firebase Firestore
         await FirebaseFirestore.instance
             .collection('class_chats')
             .doc(widget.classId)
@@ -315,7 +302,7 @@ class _GlobalChatScreenState extends State<GlobalChatScreen>
             .add({
               'senderId': uid,
               'senderName': name,
-              'message': voiceUrl, // <--- Link to Cloudinary
+              'message': voiceUrl,
               'messageType': 'voice',
               'voiceDuration': duration,
               'timestamp': FieldValue.serverTimestamp(),

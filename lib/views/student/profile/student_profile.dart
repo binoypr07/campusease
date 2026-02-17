@@ -890,7 +890,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                           // Formula explanation
                           if (totalDays > 0)
                             const Text(
-                              "Formula: (Present + 0.5 × Half Days) ÷ Working Days",
+                              "Formula: (Present + 0.5 * Half Days) ÷ Working Days",
                               style: TextStyle(
                                 color: Colors.white38,
                                 fontSize: 10,

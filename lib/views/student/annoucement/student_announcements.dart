@@ -27,11 +27,6 @@ class _StudentAnnouncementsScreenState
     _loadAndSetup();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Load user data FIRST, then subscribe to the correct topics.
-  // Original bug: _setupNotifications() was called in initState() before
-  // classYear/department were loaded, so topic subscriptions were always null.
-  // ─────────────────────────────────────────────────────────────────────────
   Future<void> _loadAndSetup() async {
     final doc = await _db.collection("users").doc(uid).get();
     classYear = doc.data()?["classYear"];
@@ -39,12 +34,10 @@ class _StudentAnnouncementsScreenState
 
     setState(() => loading = false);
 
-    // Subscribe to topics only after data is loaded
     await _setupNotifications();
   }
 
   Future<void> _setupNotifications() async {
-    // Request permission (required for iOS, good practice for Android 13+)
     final settings = await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
@@ -52,40 +45,20 @@ class _StudentAnnouncementsScreenState
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      // Subscribe to department topic (e.g. "Computer_Science")
+
       if (department != null && department!.isNotEmpty) {
         await FirebaseMessaging.instance.subscribeToTopic(
           department!.replaceAll(' ', '_'),
         );
       }
-
-      // Subscribe to class topic (e.g. "CS1")
       if (classYear != null && classYear!.isNotEmpty) {
         await FirebaseMessaging.instance.subscribeToTopic(
           classYear!.replaceAll(' ', '_'),
         );
       }
 
-      // Subscribe to general "all" topic for college-wide announcements
       await FirebaseMessaging.instance.subscribeToTopic("all");
     }
-
-    // Handle foreground notifications (app is open)
-    // Mirrors the onMessage listener pattern used in GlobalChatScreen
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (!mounted) return;
-      if (message.notification != null) {
-        Get.snackbar(
-          message.notification!.title ?? "📢 Announcement",
-          message.notification!.body ?? "",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: const Color(0xFF1F2C34),
-          colorText: Colors.white,
-          icon: const Icon(Icons.campaign, color: Colors.blueAccent),
-          duration: const Duration(seconds: 4),
-        );
-      }
-    });
   }
 
   bool _filter(Map<String, dynamic> d) {

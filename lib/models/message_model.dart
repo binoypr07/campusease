@@ -10,8 +10,8 @@ class MessageModel {
   final String status;
   final String? replyTo;
   final List<String> seenBy;
-  final String messageType; // NEW: 'text' or 'voice'
-  final int? voiceDuration; // NEW: Duration in seconds for voice messages
+  final String messageType; 
+  final int? voiceDuration; 
 
   MessageModel({
     this.id,
@@ -23,8 +23,8 @@ class MessageModel {
     this.status = 'sent',
     this.replyTo,
     this.seenBy = const [],
-    this.messageType = 'text', // NEW: Default to 'text'
-    this.voiceDuration, // NEW: Optional voice duration
+    this.messageType = 'text', 
+    this.voiceDuration, 
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map, {required String id}) {
@@ -40,8 +40,8 @@ class MessageModel {
       status: map['status'] ?? 'sent',
       replyTo: map['replyTo'],
       seenBy: List<String>.from(map['seenBy'] ?? []),
-      messageType: map['messageType'] ?? 'text', // NEW
-      voiceDuration: map['voiceDuration'], // NEW
+      messageType: map['messageType'] ?? 'text', 
+      voiceDuration: map['voiceDuration'], 
     );
   }
 
@@ -55,8 +55,8 @@ class MessageModel {
       'status': status,
       'replyTo': replyTo,
       'seenBy': seenBy,
-      'messageType': messageType, // NEW
-      'voiceDuration': voiceDuration, // NEW
+      'messageType': messageType, 
+      'voiceDuration': voiceDuration, 
     };
   }
 }

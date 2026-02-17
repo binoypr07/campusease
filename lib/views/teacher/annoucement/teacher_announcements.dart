@@ -36,8 +36,6 @@ class _TeacherAnnouncementsScreenState
     teacherClass = doc.data()?["assignedClass"];
     teacherName = doc.data()?["name"] ?? "Teacher";
 
-    // Subscribe to own department and class topics
-    // so teacher also receives notifications (mirrors GlobalChatScreen logic)
     if (teacherDept != null) {
       final deptTopic = teacherDept!.replaceAll(' ', '_');
       await FirebaseMessaging.instance.subscribeToTopic(deptTopic);
@@ -50,10 +48,6 @@ class _TeacherAnnouncementsScreenState
     setState(() => loading = false);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // RENDER WAKEUP  (mirrors syncWithRender in GlobalChatScreen)
-  // Only used to keep the Render server alive — NOT for real notifications.
-  // ─────────────────────────────────────────────────────────────────────────
   Future<void> _wakeUpRenderServer() async {
     final url = Uri.parse('https://shade-0pxb.onrender.com/users');
     try {
@@ -70,21 +64,15 @@ class _TeacherAnnouncementsScreenState
           )
           .timeout(const Duration(seconds: 10));
     } catch (e) {
-      // Server is waking up or offline — safe to ignore
       print("Render wakeup: Server waking up or offline. (Ignoring)");
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // REAL FCM NOTIFICATION  (exact same pattern as _sendWhatsAppStyleNotification
-  // in GlobalChatScreen — uses the /notification endpoint)
-  // ─────────────────────────────────────────────────────────────────────────
   Future<void> _sendAnnouncementNotification({
     required String title,
     required String body,
-    required String targetTopic, // raw value, e.g. "CS-A" or "Computer Science"
+    required String targetTopic,
   }) async {
-    // FCM topic names cannot contain spaces — replace with underscore
     final String fcmTopic = targetTopic.replaceAll(' ', '_');
 
     final url = Uri.parse('https://shade-0pxb.onrender.com/notification');
@@ -94,13 +82,14 @@ class _TeacherAnnouncementsScreenState
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "from": "CampusEase",
-          "to": "/topics/$fcmTopic", // ← same format as GlobalChatScreen
+          "to": "/topics/$fcmTopic",
           "title": "📢 $title",
           "body": "${teacherName ?? 'Teacher'}: $body",
           "data": {
             "type": "announcement",
             "targetTopic": targetTopic,
-            "senderId": uid,
+            "senderId":
+                uid, 
             "click_action": "FLUTTER_NOTIFICATION_CLICK",
           },
         }),
@@ -111,12 +100,7 @@ class _TeacherAnnouncementsScreenState
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // CREATE ANNOUNCEMENT
-  // ─────────────────────────────────────────────────────────────────────────
   Future<void> _createAnnouncement() async {
-    // Wake up Render before the user finishes typing (same pattern as GlobalChatScreen's
-    // syncWithRender("System_Wakeup", "User_Entry") in initState)
     _wakeUpRenderServer();
 
     final titleC = TextEditingController();
@@ -207,7 +191,6 @@ class _TeacherAnnouncementsScreenState
 
                 if (title.isEmpty || bodyText.isEmpty) return;
 
-                // 1. Save to Firestore
                 await _db.collection("announcements").add({
                   "title": title,
                   "body": bodyText,
@@ -217,8 +200,6 @@ class _TeacherAnnouncementsScreenState
                   "target": {"type": targetType, "value": targetValue},
                 });
 
-                // 2. Send real FCM push notification via /notification endpoint
-                //    (same as _sendWhatsAppStyleNotification in GlobalChatScreen)
                 await _sendAnnouncementNotification(
                   title: title,
                   body: bodyText,
@@ -235,16 +216,10 @@ class _TeacherAnnouncementsScreenState
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // DELETE ANNOUNCEMENT
-  // ─────────────────────────────────────────────────────────────────────────
   Future<void> _deleteAnnouncement(String docId) async {
     await _db.collection("announcements").doc(docId).delete();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FILTER LOGIC  (unchanged)
-  // ─────────────────────────────────────────────────────────────────────────
   bool _filterAnnouncement(Map<String, dynamic> data) {
     final target = data["target"];
     if (target == null) return false;
@@ -261,9 +236,6 @@ class _TeacherAnnouncementsScreenState
     return false;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // BUILD
-  // ─────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     if (loading) {

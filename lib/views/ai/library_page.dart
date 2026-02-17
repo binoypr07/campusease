@@ -15,8 +15,7 @@ class _LibraryPageState extends State<LibraryPage> {
 
   // --- 2026 GROQ CONFIGURATION ---
 
-  final String _groqApiKey =
-      '';
+  final String _groqApiKey = '';
 
   // Llama 3.1 is the stable instant model for 2026
   final String _model = 'llama-3.1-8b-instant';

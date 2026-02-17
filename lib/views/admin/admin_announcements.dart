@@ -60,9 +60,6 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
     adminName = doc.data()?["name"] ?? "Admin";
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // RENDER WAKEUP  — calls /users only to keep the server alive
-  // ─────────────────────────────────────────────────────────────────────────
   Future<void> _wakeUpRenderServer(String targetTopic) async {
     final url = Uri.parse('https://shade-0pxb.onrender.com/users');
     try {
@@ -83,20 +80,12 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // REAL FCM NOTIFICATION — mirrors _sendWhatsAppStyleNotification exactly.
-  // For "all" target, sends to the "all" topic so every student receives it.
-  // ─────────────────────────────────────────────────────────────────────────
   Future<void> _sendAnnouncementNotification({
     required String title,
     required String body,
     required String targetType,
     required String targetValue,
   }) async {
-    // Determine the FCM topic:
-    //   "all"        → topic = "all"
-    //   "department" → topic = "Computer_Science" (spaces → underscores)
-    //   "class"      → topic = "CS1"
     final String rawTopic = targetType == "all"
         ? "all"
         : targetValue.replaceAll(' ', '_');
@@ -108,14 +97,15 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "from": "CampusEase",
-          "to": "/topics/$rawTopic", // ← same format as GlobalChatScreen
+          "to": "/topics/$rawTopic",
           "title": "📢 $title",
           "body": "${adminName ?? 'Admin'}: $body",
           "data": {
             "type": "announcement",
             "targetType": targetType,
             "targetValue": targetValue,
-            "senderId": uid,
+            "senderId":
+                uid, 
             "click_action": "FLUTTER_NOTIFICATION_CLICK",
           },
         }),
@@ -126,9 +116,6 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // CREATE / EDIT DIALOG
-  // ─────────────────────────────────────────────────────────────────────────
   Future<void> _openEditor({DocumentSnapshot? doc}) async {
     final titleC = TextEditingController(text: doc?['title'] ?? '');
     final bodyC = TextEditingController(text: doc?['body'] ?? '');
@@ -137,7 +124,6 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
     String targetValue = doc != null ? doc['target']['value'] : '';
     String? selectedDeptForClass;
 
-    // Wake up Render early so it is ready when the user hits Save
     _wakeUpRenderServer(targetValue);
 
     await showDialog(
@@ -287,7 +273,6 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
                   "target": {"type": targetType, "value": targetValue},
                 };
 
-                // 1. Save / update Firestore
                 if (doc == null) {
                   await _db.collection("announcements").add(payload);
                 } else {
@@ -297,7 +282,6 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
                       .update(payload);
                 }
 
-                // 2. Send real FCM push notification via /notification endpoint
                 await _sendAnnouncementNotification(
                   title: title,
                   body: bodyText,
