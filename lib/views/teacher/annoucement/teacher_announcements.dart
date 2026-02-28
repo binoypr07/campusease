@@ -56,7 +56,7 @@ class _TeacherAnnouncementsScreenState
             url,
             headers: {
               "Content-Type": "application/json",
-              "shade-key": "sk_NoXC7Ob4PdWxYd9Ear9C9QCdTndPyS76",
+              "shade-key": "",
             },
             body: jsonEncode({
               "sender": "System_Wakeup",

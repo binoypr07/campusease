@@ -94,10 +94,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
     try {
       await http.post(
         url,
-        headers: {
-          "Content-Type": "application/json",
-          "shade-key": "sk_NoXC7Ob4PdWxYd9Ear9C9QCdTndPyS76",
-        },
+        headers: {"Content-Type": "application/json", "shade-key": ""},
         body: jsonEncode({
           "from": "CampusEase",
           "to": "/topics/$rawTopic",
