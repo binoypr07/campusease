@@ -282,13 +282,39 @@ class AboutUsPage extends StatelessWidget {
           _buildSectionHeader("The Vision"),
           const SizedBox(height: 12),
           _buildGlassCard(
-            child: const Text(
-              "CampusEase is designed to bridge the gap between students and faculty. We provide an all-in-one ecosystem for attendance, marks, and seamless communication to enhance the academic experience.",
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.6,
-                color: Colors.white70,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Main Description
+                const Text(
+                  "CampusEase is designed to bridge the gap between students and faculty. We provide an all-in-one ecosystem for attendance, marks, and seamless communication to enhance the academic experience.",
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: Colors.white70,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Text(
+                      "Notification Partner: ",
+                      style: TextStyle(fontSize: 13, color: Colors.white54),
+                    ),
+                    const Text(
+                      "SHADE",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white, 
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 36),

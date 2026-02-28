@@ -54,7 +54,10 @@ class _TeacherAnnouncementsScreenState
       await http
           .post(
             url,
-            headers: {"Content-Type": "application/json"},
+            headers: {
+              "Content-Type": "application/json",
+              "shade-key": "sk_NoXC7Ob4PdWxYd9Ear9C9QCdTndPyS76",
+            },
             body: jsonEncode({
               "sender": "System_Wakeup",
               "text": "Announcement_Entry",
@@ -88,8 +91,7 @@ class _TeacherAnnouncementsScreenState
           "data": {
             "type": "announcement",
             "targetTopic": targetTopic,
-            "senderId":
-                uid, 
+            "senderId": uid,
             "click_action": "FLUTTER_NOTIFICATION_CLICK",
           },
         }),

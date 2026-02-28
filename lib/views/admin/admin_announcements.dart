@@ -94,7 +94,10 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
     try {
       await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "shade-key": "sk_NoXC7Ob4PdWxYd9Ear9C9QCdTndPyS76",
+        },
         body: jsonEncode({
           "from": "CampusEase",
           "to": "/topics/$rawTopic",
@@ -104,8 +107,7 @@ class _AdminAnnouncementsScreenState extends State<AdminAnnouncementsScreen> {
             "type": "announcement",
             "targetType": targetType,
             "targetValue": targetValue,
-            "senderId":
-                uid, 
+            "senderId": uid,
             "click_action": "FLUTTER_NOTIFICATION_CLICK",
           },
         }),

@@ -272,7 +272,7 @@ class _InternalMarksPageState extends State<InternalMarksPage> {
                       ),
                       const SizedBox(width: 12),
                       SizedBox(
-                        width: 800,
+                        width: 1000,
                         child: ElevatedButton(
                           onPressed: saving ? null : _saveMarks,
                           child: saving
@@ -294,20 +294,6 @@ class _InternalMarksPageState extends State<InternalMarksPage> {
                 ],
               ),
             ),
-      // PLACE IT HERE, AFTER THE BODY
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  ClassInternalMarksView(className: widget.className),
-            ),
-          );
-        },
-        label: const Text('View Class Marks'),
-        icon: const Icon(Icons.table_view),
-      ),
     );
   }
 }

@@ -8,10 +8,21 @@ class MessageModel {
   final String message;
   final DateTime timestamp;
   final String status;
+
+  // ── Basic reply (the quoted text) ─────────────────────────────────────────
   final String? replyTo;
+
+  // ── Rich reply metadata ───────────────────────────────────────────────────
+  final String? replyToSender; // name of person being replied to
+  final String?
+  replyToType; // 'text' | 'image' | 'video' | 'voice' | 'pdf' | 'file'
+  final String? replyToMedia; // image/video URL for thumbnail in quote
+
   final List<String> seenBy;
-  final String messageType; 
-  final int? voiceDuration; 
+  final String messageType;
+  final int? voiceDuration;
+  final String? thumbnailUrl;
+  final String? fileName;
 
   MessageModel({
     this.id,
@@ -22,9 +33,14 @@ class MessageModel {
     required this.timestamp,
     this.status = 'sent',
     this.replyTo,
+    this.replyToSender,
+    this.replyToType,
+    this.replyToMedia,
     this.seenBy = const [],
-    this.messageType = 'text', 
-    this.voiceDuration, 
+    this.messageType = 'text',
+    this.voiceDuration,
+    this.thumbnailUrl,
+    this.fileName, int? fileSize,
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map, {required String id}) {
@@ -39,9 +55,14 @@ class MessageModel {
           : DateTime.now(),
       status: map['status'] ?? 'sent',
       replyTo: map['replyTo'],
+      replyToSender: map['replyToSender'],
+      replyToType: map['replyToType'],
+      replyToMedia: map['replyToMedia'],
       seenBy: List<String>.from(map['seenBy'] ?? []),
-      messageType: map['messageType'] ?? 'text', 
-      voiceDuration: map['voiceDuration'], 
+      messageType: map['messageType'] ?? 'text',
+      voiceDuration: map['voiceDuration'],
+      thumbnailUrl: map['thumbnailUrl'],
+      fileName: map['fileName'],
     );
   }
 
@@ -54,9 +75,14 @@ class MessageModel {
       'timestamp': timestamp,
       'status': status,
       'replyTo': replyTo,
+      'replyToSender': replyToSender,
+      'replyToType': replyToType,
+      'replyToMedia': replyToMedia,
       'seenBy': seenBy,
-      'messageType': messageType, 
-      'voiceDuration': voiceDuration, 
+      'messageType': messageType,
+      'voiceDuration': voiceDuration,
+      'thumbnailUrl': thumbnailUrl,
+      'fileName': fileName,
     };
   }
 }
