@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'helpers/download_helper.dart';
@@ -252,18 +252,23 @@ class _MediaViewerPageState extends State<MediaViewerPage>
       debugPrint(' File size: ${await savedFile.length()} bytes');
       setState(() => _savedFilePath = savePath);
 
+      // REPLACE WITH THIS:
       if (isMedia) {
-        final result = await ImageGallerySaver.saveFile(savePath);
-        final bool saved = result['isSuccess'] == true;
-        _showSnack(
-          saved ? 'Saved to gallery!' : 'Failed to save to gallery',
-          isError: !saved,
-        );
+        try {
+          if (widget.mediaType == 'video') {
+            await Gal.putVideo(savePath);
+          } else {
+            await Gal.putImage(savePath);
+          }
+          _showSnack('Saved to gallery!');
+        } catch (e) {
+          _showSnack('Failed to save to gallery: $e', isError: true);
+        }
       } else {
         await _openWithNativeApp(savePath);
       }
     } catch (e) {
-      debugPrint('❌  Download error: $e');
+      debugPrint('  Download error: $e');
       _showSnack('Download failed: $e', isError: true);
     } finally {
       if (mounted)

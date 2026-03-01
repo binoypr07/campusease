@@ -37,7 +37,7 @@ class MediaUploaderWidget extends StatefulWidget {
 }
 
 class _MediaUploaderWidgetState extends State<MediaUploaderWidget> {
-  static const String _cloudName = 'dqw6gqdfn';
+  static const String _cloudName = '';
   static const String _uploadPreset = 'my_voice_preset';
 
   bool _isUploading = false;
